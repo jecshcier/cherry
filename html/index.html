@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ebook3.0</title>
+</head>
+
+<body>
+    <h1>ebook3.0</h1>
+    <h4>Shayne C出品</h4>
+    <button onclick="post()">post请求</button>
+    <button onclick="get()">get请求</button>
+    <button onclick="max()">最大化</button>
+    <button onclick="min()">最小化</button>
+    <button onclick="exitApp()">关闭</button>
+    <button onclick="fullscreen()">全屏（F2）</button>
+    <button onclick="developTools()">开发者工具（ctrl + shift + i）</button>
+    <!-- <a href="http://pan.tes-sys.com/tesfs/file/download.html?id=F462F267203AB7E683E318322641D264">下载测试</a> -->
+    <a target="_blank" href="http://pan.tes-sys.com/tesfs/file/download.html?id=F462F267203AB7E683E318322641D264">下载测试</a>
+    <p>下载进度：</p>
+    <div class="progress" style="height:10px;background:#47f3fe;width:0px;margin-top:20px"><span></span></div>
+</body>
+<script type="text/javascript">
+function post() {
+    app.send('httpPost', {
+        url: 'login',
+        data: {
+            username: 'chenshenhao',
+            password: 'chenshenhao'
+        },
+        callback: 'httpPostCallback'
+    })
+    app.once('httpPostCallback', function(event, mess) {
+        alert('post请求成功\n' + mess)
+    })
+}
+
+function get() {
+    app.send('httpGet', {
+        url: 'getWholeProjectTeam',
+        callback: 'httpGetCallback'
+    })
+    app.once('httpGetCallback', function(event, mess) {
+        alert('get请求成功\n' + mess)
+    })
+}
+
+function min() {
+    app.send('minimize')
+}
+
+function max() {
+    app.send('Maximization')
+}
+
+function exitApp() {
+    app.send('exit')
+}
+
+function fullscreen() {
+    app.send('fullscreen')
+}
+
+function developTools() {
+    app.send('developTools')
+}
+// document.querySelector(".progress").style.width = '100px';
+app.on('downloadStart', () => {
+    console.log("开始下载");
+})
+app.on('downloadProgress', (event, message) => {
+    document.querySelector(".progress").style.width = parseInt(parseFloat(message) * 200) + 'px';
+    document.querySelector(".progress > span").innerHTML = parseInt(parseFloat(message) * 100) + '%';
+})
+
+</script>
+
+</html>

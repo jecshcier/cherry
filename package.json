@@ -1,0 +1,19 @@
+{
+  "name": "cherry",
+  "version": "0.0.1",
+  "description": "A small chatting application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "Shayne C",
+  "devDependencies": {
+    "electron": "^1.6.11"
+  },
+  "dependencies": {
+    "express": "^4.15.2",
+    "fs-extra": "^4.0.1",
+    "request": "^2.81.0"
+  }
+}

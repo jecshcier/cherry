@@ -1,0 +1,8 @@
+{
+    "useServer":false,
+    "localServerConfig":{
+        "PORT":53480,
+        "root":"html"
+    },
+    "serverUrl":"http://es.tes-sys.com/weare/"
+}
