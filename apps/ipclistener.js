@@ -43,7 +43,7 @@ const appEvent = {
         })
 
     },
-    windowListner: (win) => { // 程序最小化
+    windowListener: (win) => { // 程序最小化
 
         ipc.on('minimize', function(event) {
             win.minimize()
@@ -87,36 +87,38 @@ const appEvent = {
                 'properties': ['openDirectory', 'createDirectory']
             }, (dirPath) => {
                 if (dirPath) {
-                    let filePath = path.resolve(__dirname, dirPath[0] + '/' + itemName)
-
-                    let writerStream = fs.createWriteStream(filePath)
-                    writerStream.on('error', (err) => {
-                        console.log(err);
-                    });
-                    let fileSize = 0;
-                    request(itemUrl, (error, response, body) => {
-                        // console.log(response);
-                        if (!error) {
-                            console.log("ok")
-                        } else {
-                            console.log(error)
-                        }
-                        writerStream.end();
-                    }).on('data', (data) => {
-                        // decompressed data as it is received
-                        writerStream.write(data);
-                        fileSize += data.length;
-                        console.log(fileSize / itemSize)
+                    let filePath = path.resolve(__dirname, dirPath[0] + '/' + itemName);
+                    fileAutoRename(dirPath, filePath, itemName, 0, (newFilePath) => {
+                        let writerStream = fs.createWriteStream(newFilePath)
+                        writerStream.on('error', (err) => {
+                            win.webContents.send('downloadFailed','文件获取失败');
+                        });
+                        let fileSize = 0;
+                        win.webContents.send('downloadStart');
+                        request(itemUrl, (error, response, body) => {
+                            if (!error) {
+                                win.webContents.send('downloadSucess');
+                            } else {
+                                win.webContents.send('downloadFailed','网络连接失败');
+                            }
+                            writerStream.end();
+                        }).on('data', (data) => {
+                            // decompressed data as it is received
+                            writerStream.write(data);
+                            fileSize += data.length;
+                            let progress = fileSize / itemSize
+                            win.webContents.send('downloadProgress',progress);
+                        })
                     })
                 } else {
-                    console.log("网络连接失败！请重试")
+                    console.log("用户取消下载")
                 }
             })
         })
     }
 }
 
-fileDelete => (filePath) => {
+const fileDelete = (filePath) => {
     fs.ensureFile(filePath).then(() => {
         return fs.remove(filePath)
     }, (err) => {
@@ -129,23 +131,22 @@ fileDelete => (filePath) => {
 }
 
 // 重名检测
-fileAutoRename => (dirPath, num) => {
+const fileAutoRename = (dirPath, filePath, itemName, num, callback) => {
     if (!num) {
         num = 0;
     }
-    var promise = new Promise((resolve, reject) => {
-        fs.pathExists(filePath).then((exists) => {
-            if (exists) {
-                num = num++;
-                filePath = path.resolve(__dirname, dirPath + '/' + '(' + num + ')' + itemName)
-                fileAutoRename(dirPath, num)
-            } else {
-                resolve(dirPath + '/' + '(' + num + ')' + itemName)
+    fs.pathExists(filePath).then((exists) => {
+        if (exists) {
+            // console.log(filePath);
+            num++;
+            filePath = path.resolve(__dirname, dirPath + '/' + '(' + num + ')' + itemName)
+            fileAutoRename(dirPath, filePath, itemName, num, callback);
+        } else {
+            if (callback) {
+                callback(filePath)
             }
-        })
-    });
-
-    return promise;
+        }
+    })
 }
 
 module.exports = appEvent

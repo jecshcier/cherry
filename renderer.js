@@ -18,9 +18,21 @@ onload = () => {
 }
 app.on('downloadProgress', (event, message) => {
 	let webview = document.getElementById('webview');
-	webview.send('downloadProgress', message);
+	console.log(message);
+	// webview.send('downloadProgress', message);
 })
-app.on('downloadStart', () => {
+app.on('downloadStart', (event,message) => {
 	let webview = document.getElementById('webview');
-	webview.send('downloadStart', 'ok');
+	console.log(message);
+	// webview.send('downloadStart', message);
+})
+app.on('downloadSucess', (event, message) => {
+	let webview = document.getElementById('webview');
+	// webview.send('downloadSucess', message);
+	console.log(message);
+})
+app.on('downloadFailed', (event,message) => {
+	let webview = document.getElementById('webview');
+	// webview.send('downloadFailed', message);
+	console.log(message);
 })

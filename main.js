@@ -5,7 +5,12 @@
  * updateTime:2017.8.1   *
  *************************/
 
-const {app, globalShortcut, BrowserWindow, session} = require('electron')
+const {
+    app,
+    globalShortcut,
+    BrowserWindow,
+    session
+} = require('electron')
 const path = require('path')
 const url = require('url')
 const config = require('./config')
@@ -53,7 +58,7 @@ app.on('ready', () => {
 
     // 发起window监听
 
-    ipclistener.windowListner(win);
+    ipclistener.windowListener(win);
 
 })
 
@@ -61,6 +66,7 @@ app.on('ready', () => {
 app.on('window-all-closed', () => {
 
     // 判断是否为mac os，若为mac os 启用command+q
+    win = null
     if (process.platform !== 'darwin') {
         app.quit()
     }
@@ -69,9 +75,15 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
 
     // 此处为了适应mac os的dock
-
     if (win === null) {
-        createWindow()
+        win = createWindow({
+            minWidth: 1280,
+            minHeight: 800,
+            width: 1280,
+            height: 800,
+            title: 'cherry',
+            center: true
+        }, defaultUrl)
     }
 })
 
@@ -116,8 +128,8 @@ function createWindow(option, defaultUrl) {
 
     // 监听窗口关闭事件
 
-    mainWindow.on('closed', () => {
-        // mainWindow = null
+    mainWindow.on('closed', (event) => {
+        mainWindow = null
     })
 
     // 窗口失去焦点时移除快捷键以免与系统快捷键冲突
