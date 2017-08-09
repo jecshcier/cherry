@@ -48,10 +48,10 @@ app.on('ready', () => {
     // 创建窗口
 
     win = createWindow({
-        minWidth: 1280,
-        minHeight: 800,
-        width: 1280,
-        height: 800,
+        minWidth: 800,
+        minHeight: 600,
+        width: 800,
+        height: 600,
         title: 'cherry',
         center: true
     }, defaultUrl)
@@ -66,10 +66,10 @@ app.on('ready', () => {
 app.on('window-all-closed', () => {
 
     // 判断是否为mac os，若为mac os 启用command+q
-    win = null
     if (process.platform !== 'darwin') {
         app.quit()
     }
+    win = null
 })
 
 app.on('activate', () => {
@@ -77,10 +77,10 @@ app.on('activate', () => {
     // 此处为了适应mac os的dock
     if (win === null) {
         win = createWindow({
-            minWidth: 1280,
-            minHeight: 800,
-            width: 1280,
-            height: 800,
+            minWidth: 800,
+            minHeight: 600,
+            width: 800,
+            height: 600,
             title: 'cherry',
             center: true
         }, defaultUrl)

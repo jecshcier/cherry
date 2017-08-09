@@ -12,6 +12,7 @@ const config = require('../config')
 const request = require('request')
 const fs = require('fs-extra')
 const path = require('path')
+let downloadNum = 0;
 
 const appEvent = {
     appListener: () => {
@@ -88,18 +89,40 @@ const appEvent = {
             }, (dirPath) => {
                 if (dirPath) {
                     let filePath = path.resolve(__dirname, dirPath[0] + '/' + itemName);
+                    let download_id = downloadNum;
+                    // 文件重命名
                     fileAutoRename(dirPath, filePath, itemName, 0, (newFilePath) => {
                         let writerStream = fs.createWriteStream(newFilePath)
                         writerStream.on('error', (err) => {
-                            win.webContents.send('downloadFailed','文件获取失败');
+                            let stopObj = {
+                                'id': download_id,
+                                'itemName': itemName,
+                                'message': "文件写入失败"
+                            }
+                            win.webContents.send('downloadFailed', JSON.stringify(stopObj));
                         });
                         let fileSize = 0;
-                        win.webContents.send('downloadStart');
+                        let startObj = {
+                            'id': download_id,
+                            'itemName': itemName,
+                            "message": "开始下载"
+                        }
+                        win.webContents.send('downloadStart', JSON.stringify(startObj));
                         request(itemUrl, (error, response, body) => {
                             if (!error) {
-                                win.webContents.send('downloadSucess');
+                                let successObj = {
+                                    'id': download_id,
+                                    'itemName': itemName,
+                                    'message': "下载成功"
+                                }
+                                win.webContents.send('downloadSucess', JSON.stringify(successObj));
                             } else {
-                                win.webContents.send('downloadFailed','网络连接失败');
+                                let stopObj = {
+                                    'id': download_id,
+                                    'itemName': itemName,
+                                    'message': "网络连接失败"
+                                }
+                                win.webContents.send('downloadFailed', JSON.stringify(stopObj));
                             }
                             writerStream.end();
                         }).on('data', (data) => {
@@ -107,12 +130,17 @@ const appEvent = {
                             writerStream.write(data);
                             fileSize += data.length;
                             let progress = fileSize / itemSize
-                            win.webContents.send('downloadProgress',progress);
+                            let progressObj = {
+                                'id': download_id,
+                                'progress': progress
+                            }
+                            win.webContents.send('downloadProgress', JSON.stringify(progressObj));
                         })
                     })
                 } else {
                     console.log("用户取消下载")
                 }
+                downloadNum ++;
             })
         })
     }

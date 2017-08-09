@@ -19,6 +19,7 @@
     <button onclick="fullscreen()">全屏（F2）</button>
     <button onclick="developTools()">开发者工具（ctrl + shift + i）</button>
     <!-- <a href="http://pan.tes-sys.com/tesfs/file/download.html?id=F462F267203AB7E683E318322641D264">下载测试</a> -->
+    <a target="_blank" href="http://pan.tes-sys.com/tesfs/file/download.html?id=4E650CAD972874984AEF1B3C996FD28C">下载测试</a>
     <a target="_blank" href="http://pan.tes-sys.com/tesfs/file/download.html?id=F462F267203AB7E683E318322641D264">下载测试</a>
     <p>下载进度：</p>
     <div class="progress" style="height:10px;background:#47f3fe;width:0px;margin-top:20px"><span></span></div>
@@ -68,13 +69,13 @@ function developTools() {
     app.send('developTools')
 }
 // document.querySelector(".progress").style.width = '100px';
-app.on('downloadStart', () => {
-    console.log("开始下载");
-})
-app.on('downloadProgress', (event, message) => {
-    document.querySelector(".progress").style.width = parseInt(parseFloat(message) * 200) + 'px';
-    document.querySelector(".progress > span").innerHTML = parseInt(parseFloat(message) * 100) + '%';
-})
+// app.on('downloadStart', () => {
+//     console.log("开始下载");
+// })
+// app.on('downloadProgress', (event, message) => {
+//     document.querySelector(".progress").style.width = parseInt(parseFloat(message) * 200) + 'px';
+//     document.querySelector(".progress > span").innerHTML = parseInt(parseFloat(message) * 100) + '%';
+// })
 
 </script>
 
