@@ -21,11 +21,13 @@ const appEvent = {
         ipc.on('httpPost', function(event, data) {
             request.post({
                 url: config.serverUrl + data.url,
-                form: data.data
+                body: data.data,
+                json: true
             }, function optionalCallback(err, httpResponse, body) {
                 if (err) {
                     return console.error('error:', err)
                 }
+                console.log(body)
                 event.sender.send(data.callback, body);
             });
         })
@@ -42,6 +44,8 @@ const appEvent = {
                 event.sender.send(data.callback, body);
             });
         })
+
+
 
     },
     windowListener: (win) => { // 程序最小化
@@ -115,7 +119,7 @@ const appEvent = {
                                     'itemName': itemName,
                                     'message': "下载成功"
                                 }
-                                win.webContents.send('downloadSucess', JSON.stringify(successObj));
+                                win.webContents.send('downloadSuccess', JSON.stringify(successObj));
                             } else {
                                 let stopObj = {
                                     'id': download_id,
@@ -140,7 +144,73 @@ const appEvent = {
                 } else {
                     console.log("用户取消下载")
                 }
-                downloadNum ++;
+                downloadNum++;
+            })
+        })
+
+        // 上传文件监听
+
+        ipc.on('uploadFiles', function(event, data) {
+            dialog.showOpenDialog({
+                properties: ['openFile', 'multiSelections']
+            }, (files) => {
+                if (files) {
+                    let upload_id = downloadNum;
+                    let fileWholeSize = 0;
+                    let uploadUrl = data.url
+                    delete data.url
+                    let fileArr = [];
+                    files.forEach((el, index) => {
+                        console.log(index);
+                        console.log(el);
+                        let fileObj = fs.statSync(el)
+                        console.log(fileObj.size);
+                        fileWholeSize += fileObj.size
+                        fileArr.push(fs.createReadStream(files[index]))
+                    })
+                    data.upload_file = fileArr[0]
+                    let timer;
+                    let startObj = {
+                        'id': upload_id,
+                        'message': '开始上传'
+                    }
+                    win.webContents.send('uploadStart', JSON.stringify(startObj));
+                    console.log("上传中...");
+                    let requestObj = request.post({
+                        url: uploadUrl,
+                        formData: data
+                    }, function optionalCallback(err, httpResponse, body) {
+                        if (err) {
+                            let failObj = {
+                                'id': upload_id,
+                                'message': '上传失败'
+                            }
+                            win.webContents.send('uploadFailed', JSON.stringify(failObj));
+                            return console.error('upload failed:', err);
+                        }
+                        console.log('上传ok');
+                        // clearInterval(timer);
+                        let successObj = {
+                            'id': upload_id,
+                            'message': '上传成功'
+                        }
+                        win.webContents.send('uploadSuccess', JSON.stringify(successObj));
+                    }).on('drain', (data) => {
+                        console.log(requestObj.req.connection._bytesDispatched)
+                        console.log(fileWholeSize)
+                        console.log(requestObj.req.connection._httpMessage._headers['content-length'])
+                        let progress = requestObj.req.connection._bytesDispatched / fileWholeSize;
+                        let progressObj = {
+                            'id': upload_id,
+                            'progress': progress
+                        }
+                        win.webContents.send('uploadProgress', JSON.stringify(progressObj));
+                        console.log(progress)
+                    })
+
+                } else {
+                    console.log("用户取消了上传");
+                }
             })
         })
     }

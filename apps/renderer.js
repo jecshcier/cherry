@@ -20,7 +20,7 @@ onload = () => {
 const downloadSucess = (event, message) => {
     let obj = JSON.parse(message);
     let webview = document.getElementById('webview');
-    webview.send('downloadSucess', message);
+    webview.send('downloadSuccess', message);
     console.log(obj.id + obj.message)
 };
 const downloadProgress = (event, message) => {
@@ -42,8 +42,37 @@ const downloadFailed = (event, message) => {
     console.log(obj.id + obj.message)
 };
 
+const uploadSucess = (event, message) => {
+    let obj = JSON.parse(message);
+    let webview = document.getElementById('webview');
+    webview.send('uploadSucess', message);
+    console.log(obj.id + obj.message)
+};
+const uploadProgress = (event, message) => {
+    let obj = JSON.parse(message);
+    let webview = document.getElementById('webview');
+    webview.send('uploadProgress', message);
+    console.log("上传" + obj.id + ":" + obj.progress)
+};
+const uploadStart = (event, message) => {
+    let obj = JSON.parse(message);
+    let webview = document.getElementById('webview');
+    webview.send('uploadStart', message);
+    console.log(obj.id + obj.message)
+};
+const uploadFailed = (event, message) => {
+    let obj = JSON.parse(message);
+    let webview = document.getElementById('webview');
+    webview.send('uploadFailed', message);
+    console.log(obj.id + obj.message)
+};
 
+
+app.on('uploadProgress', uploadProgress)
+app.on('uploadStart', uploadStart)
+app.on('uploadSuccess', uploadSucess)
+app.on('uploadFailed', uploadFailed)
 app.on('downloadProgress', downloadProgress)
 app.on('downloadStart', downloadStart)
-app.on('downloadSucess', downloadSucess)
+app.on('downloadSuccess', downloadSucess)
 app.on('downloadFailed', downloadFailed)

@@ -18,7 +18,14 @@
     <button onclick="exitApp()">关闭</button>
     <button onclick="fullscreen()">全屏（F2）</button>
     <button onclick="developTools()">开发者工具（ctrl + shift + i）</button>
-    <button type="button" name="button" onclick="uploadFiles('http://pan.tes-sys.com/skydisk-ms/api/fileUpload')">上传文件测试</button>
+    <button type="button" name="button" onclick="uploadFiles({
+        'url':'http://pan.tes-sys.com/skydisk-ms/api/fileUpload.html',
+        'd': '561D156823FB23BEBCB342F41D757F9E',
+        'dir_id': '4262EE8CB97BD59D044FD66DCC66C068',
+        'pub_flag': '2',
+        'user_id': 'B220F7C944ECD1DDD0BF063F4439E961',
+        'response_url': ''
+    })">上传文件测试</button>
     <!-- <a href="http://pan.tes-sys.com/tesfs/file/download.html?id=F462F267203AB7E683E318322641D264">下载测试</a> -->
     <a target="_blank" href="http://pan.tes-sys.com/tesfs/file/download.html?id=4E650CAD972874984AEF1B3C996FD28C">下载测试</a>
     <a target="_blank" href="http://pan.tes-sys.com/tesfs/file/download.html?id=F462F267203AB7E683E318322641D264">下载测试</a>
@@ -26,61 +33,61 @@
     <div class="progress" style="height:10px;background:#47f3fe;width:0px;margin-top:20px"><span></span></div>
 </body>
 <script type="text/javascript">
-function uploadFiles(url){
-    console.log(url)
-}
-function post() {
-    app.send('httpPost', {
-        url: 'login',
-        data: {
-            username: 'chenshenhao',
-            password: 'chenshenhao'
-        },
-        callback: 'httpPostCallback'
-    })
-    app.once('httpPostCallback', function(event, mess) {
-        alert('post请求成功\n' + mess)
-    })
-}
+    function uploadFiles(data) {
+        app.send('uploadFiles', data)
+    }
 
-function get() {
-    app.send('httpGet', {
-        url: 'getWholeProjectTeam',
-        callback: 'httpGetCallback'
-    })
-    app.once('httpGetCallback', function(event, mess) {
-        alert('get请求成功\n' + mess)
-    })
-}
+    function post() {
+        app.send('httpPost', {
+            url: 'login',
+            data: {
+                username: 'chenshenhao',
+                password: 'chenshenhao'
+            },
+            callback: 'httpPostCallback'
+        })
+        app.once('httpPostCallback', function(event, mess) {
+            alert('post请求成功\n' + mess)
+        })
+    }
 
-function min() {
-    app.send('minimize')
-}
+    function get() {
+        app.send('httpGet', {
+            url: 'getWholeProjectTeam',
+            callback: 'httpGetCallback'
+        })
+        app.once('httpGetCallback', function(event, mess) {
+            alert('get请求成功\n' + mess)
+        })
+    }
 
-function max() {
-    app.send('Maximization')
-}
+    function min() {
+        app.send('minimize')
+    }
 
-function exitApp() {
-    app.send('exit')
-}
+    function max() {
+        app.send('Maximization')
+    }
 
-function fullscreen() {
-    app.send('fullscreen')
-}
+    function exitApp() {
+        app.send('exit')
+    }
 
-function developTools() {
-    app.send('developTools')
-}
-// document.querySelector(".progress").style.width = '100px';
-// app.on('downloadStart', () => {
-//     console.log("开始下载");
-// })
-// app.on('downloadProgress', (event, message) => {
-//     document.querySelector(".progress").style.width = parseInt(parseFloat(message) * 200) + 'px';
-//     document.querySelector(".progress > span").innerHTML = parseInt(parseFloat(message) * 100) + '%';
-// })
+    function fullscreen() {
+        app.send('fullscreen')
+    }
 
+    function developTools() {
+        app.send('developTools')
+    }
+    // document.querySelector(".progress").style.width = '100px';
+    // app.on('downloadStart', () => {
+    //     console.log("开始下载");
+    // })
+    // app.on('downloadProgress', (event, message) => {
+    //     document.querySelector(".progress").style.width = parseInt(parseFloat(message) * 200) + 'px';
+    //     document.querySelector(".progress > span").innerHTML = parseInt(parseFloat(message) * 100) + '%';
+    // })
 </script>
 
 </html>
