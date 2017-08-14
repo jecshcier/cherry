@@ -16,7 +16,7 @@ const url = require('url')
 const ipclistener = require('./apps/ipclistener')
 const fs = require('fs')
 let config;
-if (fs.existsSync(console.log(path.resolve(__dirname, '../config.json')))) {
+if (fs.existsSync(path.resolve(__dirname, '../config.json'))) {
     config = require('../config')
 } else {
     config = require('./config')
