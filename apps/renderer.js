@@ -1,6 +1,9 @@
-// This file is required by the index.html file and will
-// be executed in the renderer process for that window.
-// All of the Node.js APIs are available in this process.
+/**
+ * 渲染进程
+ * author:chenshenhao
+ * createTime:2017.4.5
+ * updateTime:2017.8.14
+ */
 const electron = require('electron')
 const shell = electron.shell
 const app = electron.ipcRenderer

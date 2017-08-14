@@ -2,7 +2,7 @@
  * 渲染进程监听器              *
  * author: Shayne C     *
  * createTime: 2017.4.5 *
- * updateTime: 2017.4.5 *
+ * updateTime: 2017.8.14 *
  ************************/
 
 const ipc = require('electron').ipcMain
