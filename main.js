@@ -13,8 +13,14 @@ const {
 } = require('electron')
 const path = require('path')
 const url = require('url')
-const config = require('./config')
 const ipclistener = require('./apps/ipclistener')
+const fs = require('fs')
+let config;
+if (fs.existsSync(console.log(path.resolve(__dirname, '../config.json')))) {
+    config = require('../config')
+} else {
+    config = require('./config')
+}
 
 // 若需要用到httpServer，则创建httpServer
 
@@ -48,12 +54,14 @@ app.on('ready', () => {
     // 创建窗口
 
     win = createWindow({
-        minWidth: 800,
-        minHeight: 600,
-        width: 800,
-        height: 600,
+        minWidth: config.minWidth,
+        minHeight: config.minHeight,
+        width: config.width,
+        height: config.height,
         title: 'cherry',
-        center: true
+        center: true,
+        fullscreen:config.fullscreen,
+        fullscreenable:config.fullscreenable
     }, defaultUrl)
 
     // 发起window监听
@@ -77,12 +85,14 @@ app.on('activate', () => {
     // 此处为了适应mac os的dock
     if (win === null) {
         win = createWindow({
-            minWidth: 800,
-            minHeight: 600,
-            width: 800,
-            height: 600,
+            minWidth: config.minWidth,
+            minHeight: config.minHeight,
+            width: config.width,
+            height: config.height,
             title: 'cherry',
-            center: true
+            center: true,
+            fullscreen:config.fullscreen,
+            fullscreenable:config.fullscreenable
         }, defaultUrl)
     }
 })

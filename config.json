@@ -2,7 +2,13 @@
     "useServer":false,
     "localServerConfig":{
         "PORT":53480,
-        "root":"html"
+        "root":"../html"
     },
-    "serverUrl":"http://es.tes-sys.com/weare/"
+    "serverUrl":"http://es.tes-sys.com/weare/",
+    "width":800,
+    "height":600,
+    "minWidth":800,
+    "minHeight":600,
+    "fullscreen":true,
+    "fullscreenable":true
 }
