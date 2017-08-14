@@ -12,6 +12,8 @@ const config = require('../config')
 const request = require('request')
 const fs = require('fs-extra')
 const path = require('path')
+let uploadArr = {};
+let downloadArr = {};
 let downloadNum = 0;
 
 const appEvent = {
@@ -81,6 +83,32 @@ const appEvent = {
 
         })
 
+        ipc.on('developTools', function(event) {
+            win.webContents.toggleDevTools()
+
+        })
+
+        ipc.on('stopUpload', function(event, data) {
+            // console.log(uploadArr[id]);
+            if (uploadArr[data.id]) {
+                uploadArr[data.id].req.abort();
+                event.sender.send(data.callback, "成功");
+            } else {
+                event.sender.send(data.callback, "失败");
+            }
+        })
+        //
+        ipc.on('stopDownload', function(event, data) {
+            // console.log(uploadArr[id]);
+            if (downloadArr[data.id]) {
+                // console.log(downloadArr[data.id])
+                downloadArr[data.id].req.abort();
+                event.sender.send(data.callback, "成功");
+            } else {
+                event.sender.send(data.callback, "失败");
+            }
+        })
+
         // 监听下载事件
         win.webContents.session.on('will-download', (event, item, webContents) => {
             event.preventDefault();
@@ -103,6 +131,7 @@ const appEvent = {
                                 'itemName': itemName,
                                 'message': "文件写入失败"
                             }
+                            delete downloadArr[download_id];
                             win.webContents.send('downloadFailed', JSON.stringify(stopObj));
                         });
                         let fileSize = 0;
@@ -112,13 +141,14 @@ const appEvent = {
                             "message": "开始下载"
                         }
                         win.webContents.send('downloadStart', JSON.stringify(startObj));
-                        request(itemUrl, (error, response, body) => {
+                        downloadArr[download_id] = request(itemUrl, (error, response, body) => {
                             if (!error) {
                                 let successObj = {
                                     'id': download_id,
                                     'itemName': itemName,
                                     'message': "下载成功"
                                 }
+                                delete downloadArr[download_id];
                                 win.webContents.send('downloadSuccess', JSON.stringify(successObj));
                             } else {
                                 let stopObj = {
@@ -126,9 +156,12 @@ const appEvent = {
                                     'itemName': itemName,
                                     'message': "网络连接失败"
                                 }
+                                delete downloadArr[download_id];
                                 win.webContents.send('downloadFailed', JSON.stringify(stopObj));
                             }
                             writerStream.end();
+                        }).on('response', (res) => {
+                            console.log(res.headers['content-disposition'].replace(/attachment; filename=/, ''))
                         }).on('data', (data) => {
                             // decompressed data as it is received
                             writerStream.write(data);
@@ -140,6 +173,75 @@ const appEvent = {
                             }
                             win.webContents.send('downloadProgress', JSON.stringify(progressObj));
                         })
+                    })
+                } else {
+                    console.log("用户取消下载")
+                }
+                downloadNum++;
+            })
+        })
+
+        // 下载文件监听
+        ipc.on('downloadFile', function(event, url) {
+            // 设置下载路径
+            dialog.showOpenDialog({
+                'properties': ['openDirectory', 'createDirectory']
+            }, (dirPath) => {
+                if (dirPath) {
+                    let download_id = downloadNum;
+                    let itemName = '';
+                    let writerStream;
+                    let fileSize = 0;
+                    let itemSize = 0;
+                    downloadArr[download_id] = request(url, (error, response, body) => {
+                        if (!error) {
+                            let successObj = {
+                                'id': download_id,
+                                'itemName': itemName,
+                                'message': "下载成功"
+                            }
+                            delete downloadArr[download_id];
+                            win.webContents.send('downloadSuccess', JSON.stringify(successObj));
+                        } else {
+                            let stopObj = {
+                                'id': download_id,
+                                'itemName': itemName,
+                                'message': "网络连接失败"
+                            }
+                            delete downloadArr[download_id];
+                            win.webContents.send('downloadFailed', JSON.stringify(stopObj));
+                        }
+                        writerStream.end();
+                    }).on('data', (data) => {
+                        // decompressed data as it is received
+                        writerStream.write(data);
+                        fileSize += data.length;
+                        let progress = fileSize / itemSize
+                        let progressObj = {
+                            'id': download_id,
+                            'progress': progress
+                        }
+                        win.webContents.send('downloadProgress', JSON.stringify(progressObj));
+                    }).on('response', (res) => {
+                        itemName = res.headers['content-disposition'].replace(/attachment; filename=/, '');
+                        itemSize = parseInt(res.headers['content-length'])
+                        let filePath = path.resolve(__dirname, dirPath[0] + '/' + itemName);
+                        writerStream = fs.createWriteStream(filePath)
+                        writerStream.on('error', (err) => {
+                            let stopObj = {
+                                'id': download_id,
+                                'itemName': itemName,
+                                'message': "文件写入失败"
+                            }
+                            delete downloadArr[download_id];
+                            win.webContents.send('downloadFailed', JSON.stringify(stopObj));
+                        });
+                        let startObj = {
+                            'id': download_id,
+                            'itemName': itemName,
+                            "message": "开始下载"
+                        }
+                        win.webContents.send('downloadStart', JSON.stringify(startObj));
                     })
                 } else {
                     console.log("用户取消下载")
@@ -176,7 +278,7 @@ const appEvent = {
                     }
                     win.webContents.send('uploadStart', JSON.stringify(startObj));
                     console.log("上传中...");
-                    let requestObj = request.post({
+                    uploadArr[upload_id] = request.post({
                         url: uploadUrl,
                         formData: data
                     }, function optionalCallback(err, httpResponse, body) {
@@ -185,6 +287,7 @@ const appEvent = {
                                 'id': upload_id,
                                 'message': '上传失败'
                             }
+                            delete uploadArr[upload_id];
                             win.webContents.send('uploadFailed', JSON.stringify(failObj));
                             return console.error('upload failed:', err);
                         }
@@ -194,12 +297,13 @@ const appEvent = {
                             'id': upload_id,
                             'message': '上传成功'
                         }
+                        delete uploadArr[upload_id];
                         win.webContents.send('uploadSuccess', JSON.stringify(successObj));
                     }).on('drain', (data) => {
-                        console.log(requestObj.req.connection._bytesDispatched)
+                        console.log(uploadArr[upload_id].req.connection._bytesDispatched)
                         console.log(fileWholeSize)
-                        console.log(requestObj.req.connection._httpMessage._headers['content-length'])
-                        let progress = requestObj.req.connection._bytesDispatched / fileWholeSize;
+                        console.log(uploadArr[upload_id].req.connection._httpMessage._headers['content-length'])
+                        let progress = uploadArr[upload_id].req.connection._bytesDispatched / fileWholeSize;
                         let progressObj = {
                             'id': upload_id,
                             'progress': progress

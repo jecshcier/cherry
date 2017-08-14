@@ -11,6 +11,7 @@ onload = () => {
     webview.addEventListener('console-message', (e) => {
         console.log('Guest page logged a message:', e.message)
     })
+    // 此处是对弹出新窗口的拦截，本app目前只支持一个窗口
     webview.addEventListener('new-window', function(e) {
         e.preventDefault();
         this.loadURL(e.url);
@@ -41,7 +42,6 @@ const downloadFailed = (event, message) => {
     webview.send('downloadFailed', message);
     console.log(obj.id + obj.message)
 };
-
 const uploadSucess = (event, message) => {
     let obj = JSON.parse(message);
     let webview = document.getElementById('webview');
