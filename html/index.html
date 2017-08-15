@@ -44,7 +44,7 @@
     // post请求接口
     function post() {
         app.send('httpPost', {
-            url: 'login',
+            url: 'http://es.tes-sys.com/weare/login',
             data: {
                 username: 'chenshenhao',
                 password: 'chenshenhao'
@@ -59,7 +59,7 @@
     // get请求接口
     function get() {
         app.send('httpGet', {
-            url: 'getWholeProjectTeam',
+            url: 'http://es.tes-sys.com/weare/getWholeProjectTeam',
             callback: 'httpGetCallback'
         })
         app.once('httpGetCallback', function(event, mess) {
