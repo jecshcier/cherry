@@ -42,7 +42,7 @@ const appEvent = {
 
         ipc.on('httpPost', function(event, data) {
             request.post({
-                url: config.serverUrl + data.url,
+                url: data.url,
                 body: data.data,
                 json: true
             }, function optionalCallback(err, httpResponse, body) {
@@ -58,7 +58,7 @@ const appEvent = {
 
         ipc.on('httpGet', function(event, data) {
             request.get({
-                url: config.serverUrl + data.url
+                url: data.url
             }, function optionalCallback(err, httpResponse, body) {
                 if (err) {
                     return console.error('error:', err)
