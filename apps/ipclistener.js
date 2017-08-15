@@ -13,7 +13,23 @@ const request = require('request')
 const fs = require('fs-extra')
 const path = require('path')
 var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('../userData/user.db');
+// var db = new sqlite3.Database('../userData/user.db');
+//
+// db.serialize(function() {
+//     var stmt = db.prepare("INSERT INTO teach_process (id,book_id,user_id,page_id,count,pos_x,pos_y,create_time,update_time) VALUES ($id,$book_id,$user_id,$page_id,$count,$pos_x,$pos_y,$create_time,$update_time)");
+//     stmt.run({
+//         $id: 'test',
+//         $book_id: 'test',
+//         $user_id: 'test',
+//         $page_id: 'test',
+//         $count: 'test',
+//         $pos_x: 'test',
+//         $pos_y: 'test',
+//         $create_time: 'test',
+//         $update_time: 'test'
+//     });
+//     stmt.finalize();
+// });
 
 
 let uploadArr = {};
