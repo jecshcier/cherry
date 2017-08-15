@@ -11,7 +11,7 @@ const dialog = require('electron').dialog
 const request = require('request')
 const fs = require('fs-extra')
 const path = require('path')
-const config = require(path.resolve(__dirname, process.cwd() + '/../config'));
+const config = require(path.resolve(__dirname, process.cwd() + '/config'));
 var sqlite3 = require('sqlite3').verbose();
 
 // var db = new sqlite3.Database('../userData/user.db');
