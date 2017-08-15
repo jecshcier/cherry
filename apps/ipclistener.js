@@ -12,6 +12,10 @@ const config = require('../config')
 const request = require('request')
 const fs = require('fs-extra')
 const path = require('path')
+var sqlite3 = require('sqlite3').verbose();
+var db = new sqlite3.Database('../userData/user.db');
+
+
 let uploadArr = {};
 let downloadArr = {};
 let downloadNum = 0;
