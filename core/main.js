@@ -15,7 +15,7 @@ const path = require('path')
 const url = require('url')
 const ipclistener = require('./apps/ipclistener')
 const fs = require('fs')
-const config = require(path.resolve(__dirname, process.cwd() + '/config'));
+const config = require(path.resolve(__dirname, '../app/config'));
 
 
 // 若需要用到httpServer，则创建httpServer
@@ -25,7 +25,7 @@ if (config.useServer) {
 
     // 创建httpServer
     let PORT = config.localServerConfig.PORT
-    let root = config.localServerConfig.root
+    let root = path.resolve(__dirname, '../app/' + config.localServerConfig.root)
     creatServer(PORT, root)
 }
 
@@ -56,8 +56,8 @@ app.on('ready', () => {
         height: config.height,
         title: config.title,
         center: true,
-        fullscreen:config.fullscreen,
-        fullscreenable:config.fullscreenable
+        fullscreen: config.fullscreen,
+        fullscreenable: config.fullscreenable
     }, defaultUrl)
 
     // 发起window监听
@@ -68,29 +68,22 @@ app.on('ready', () => {
 
 // app监听窗口关闭事件
 app.on('window-all-closed', () => {
-
     // 判断是否为mac os，若为mac os 启用command+q
     if (process.platform !== 'darwin') {
         app.quit()
     }
-    win = null
 })
 
 app.on('activate', () => {
-
+    console.log()
     // 此处为了适应mac os的dock
-    if (win === null) {
-        win = createWindow({
-            minWidth: config.minWidth,
-            minHeight: config.minHeight,
-            width: config.width,
-            height: config.height,
-            title: config.title,
-            center: true,
-            fullscreen:config.fullscreen,
-            fullscreenable:config.fullscreenable
-        }, defaultUrl)
+    if (!win.isVisible()) {
+        win.show()
     }
+})
+
+app.on('before-quit', () => {
+    win._closed = true
 })
 
 // 全局键盘监听事件
@@ -99,13 +92,13 @@ function registerShortcut() {
 
     // 开发者工具
 
-    // globalShortcut.register('CommandOrControl+Shift+i', () => {
-    //     win.webContents.toggleDevTools()
-    // })
+    globalShortcut.register('CommandOrControl+Shift+i', () => {
+        win.webContents.toggleDevTools()
+    })
 
     // 全屏
 
-    globalShortcut.register('F2', () => {
+    globalShortcut.register('F11', () => {
         if (!win.isFullScreen()) {
             win.setFullScreen(true)
         } else {
@@ -130,21 +123,35 @@ function createWindow(option, defaultUrl) {
 
     // 去除默认菜单
 
-    mainWindow.setMenu(null)
+    if (process.platform !== 'darwin') {
+        mainWindow.setMenu(null)
+    }
 
     // 监听窗口关闭事件
+    mainWindow.on('close', (event) => {
+        if (!mainWindow._closed && process.platform === 'darwin') {
+            event.preventDefault()
+            mainWindow.hide()
+            return;
+        }
+        mainWindow = null
+        // console.log(mainWindow)
+        // // 如果是mac，则关闭即为隐藏
+        // if (process.platform === 'darwin') {
+        //     mainWindow.hide()
+        // }
+        // else{
+        //     mainWindow = null
+        // }
+    })
 
     mainWindow.on('closed', (event) => {
-        mainWindow = null
+        // mainWindow = null
     })
 
     // 窗口失去焦点时移除快捷键以免与系统快捷键冲突
 
     mainWindow.on('blur', () => {
-        let win = BrowserWindow.getFocusedWindow();
-        if (win) {
-            return;
-        }
         globalShortcut.unregisterAll();
     });
 
@@ -156,7 +163,8 @@ function createWindow(option, defaultUrl) {
 
     // 监听窗口创建完成事件
 
-    app.on('browser-window-created', function(event, window) {})
+    app.on('browser-window-created', function (event, window) {
+    })
 
     return mainWindow
 }

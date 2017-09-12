@@ -1,96 +1,520 @@
-/************************
+﻿/************************
  * 渲染进程监听器              *
  * author: Shayne C     *
  * createTime: 2017.4.5 *
- * updateTime: 2017.8.14 *
+ * updateTime: 2017.8.29 *
  ************************/
-
 const ipc = require('electron').ipcMain
 const app = require('electron').app
 const dialog = require('electron').dialog
+const path = require('path')
+const config = require(path.resolve(__dirname, '../../app/config'));
 const request = require('request')
 const fs = require('fs-extra')
-const path = require('path')
-const config = require(path.resolve(__dirname, process.cwd() + '/config'));
-var sqlite3 = require('sqlite3').verbose();
+const querystring = require('querystring');
+const sqlite3 = require('sqlite3').verbose();
+// const db = new sqlite3.Database(path.resolve(__dirname, '../../app/' + config.dbUrl));
+// const uuid = require('uuid')
+// const moment = require('moment');
+const child = require('child_process')
+const download_process = path.resolve(__dirname, __dirname + '/download.js')
+const upload_process = path.resolve(__dirname, __dirname + '/upload.js')
+const downloadPath = path.resolve(__dirname, '../../app/' + config.downloadPath)
+const QRCode = require('qrcode')
 
-// var db = new sqlite3.Database('../userData/user.db');
-//
-// db.serialize(function() {
-//     var stmt = db.prepare("INSERT INTO teach_process (id,book_id,user_id,page_id,count,pos_x,pos_y,create_time,update_time) VALUES ($id,$book_id,$user_id,$page_id,$count,$pos_x,$pos_y,$create_time,$update_time)");
-//     stmt.run({
-//         $id: 'test',
-//         $book_id: 'test',
-//         $user_id: 'test',
-//         $page_id: 'test',
-//         $count: 'test',
-//         $pos_x: 'test',
-//         $pos_y: 'test',
-//         $create_time: 'test',
-//         $update_time: 'test'
-//     });
-//     stmt.finalize();
-// });
-
-
-let uploadArr = {};
-let downloadArr = {};
-let downloadNum = 0;
 
 const appEvent = {
     appListener: () => {
+
         // post请求
 
-        ipc.on('httpPost', function(event, data) {
+        ipc.on('httpPost', function (event, data) {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
             request.post({
                 url: data.url,
                 body: data.data,
                 json: true
             }, function optionalCallback(err, httpResponse, body) {
                 if (err) {
+                    info.message = err
+                    event.sender.send(data.callback, info);
                     return console.error('error:', err)
                 }
-                console.log(body)
-                event.sender.send(data.callback, body);
+                info.flag = true
+                info.message = "请求成功"
+                info.data = body
+                info = JSON.stringify(info)
+                event.sender.send(data.callback, info);
             });
         })
 
         // get请求
 
-        ipc.on('httpGet', function(event, data) {
+        ipc.on('httpGet', function (event, data) {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
             request.get({
                 url: data.url
             }, function optionalCallback(err, httpResponse, body) {
                 if (err) {
+                    info.message = err;
+                    event.sender.send(data.callback, info);
                     return console.error('error:', err)
                 }
-                event.sender.send(data.callback, body);
+                info.flag = true
+                info.message = "请求成功"
+
+                info.data = body
+                info = JSON.stringify(info)
+                event.sender.send(data.callback, info);
             });
         })
 
+        // get请求(非json)
 
+        // ipc.on('httpGet', function (event, data) {
+        //     let info = {
+        //         flag: false,
+        //         message: '',
+        //         data: null
+        //     }
+        //     request.get({
+        //         url: data.url
+        //     }, function optionalCallback(err, httpResponse, body) {
+        //         if (err) {
+        //             info.message = err;
+        //             event.sender.send(data.callback, info);
+        //             return console.error('error:', err)
+        //         }
+        //         info.flag = true
+        //         info.message = "请求成功"
+        //
+        //         info.data = body
+        //         info = JSON.stringify(info)
+        //         event.sender.send(data.callback, info);
+        //     });
+        // })
+
+        // get请求query方式
+        ipc.on('httpGet_Query', function (event, data) {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            var stringify = querystring.stringify(data.data);
+            request.get({
+                url: data.url + '?' + stringify
+            }, function optionalCallback(err, httpResponse, body) {
+                if (err) {
+                    info.message = err;
+                    event.sender.send(data.callback, info);
+                    return console.error('error:', err)
+                }
+                info.flag = true
+                info.message = "请求成功"
+                info.data = body
+                info = JSON.stringify(info)
+                event.sender.send(data.callback, info);
+            });
+        })
+
+        // // 查找文件是否存在
+        // ipc.on('fileIsExsit', (event, data) => {
+        //     let info = {
+        //         flag: false,
+        //         message: '',
+        //         data: null
+        //     }
+        //     let filePath = path.resolve(downloadPath, './' + data.fileName)
+        //     fs.pathExists(filePath).then((exists) => {
+        //         if (exists) {
+        //             info.flag = true
+        //             info.message = "文件已存在"
+        //             event.sender.send(data.callback, JSON.stringify(info));
+        //         } else {
+        //             info.flag = false
+        //             info.message = "文件不存在"
+        //             event.sender.send(data.callback, JSON.stringify(info));
+        //         }
+        //     })
+        // })
+
+        //删除进程
+        ipc.on('killProcess', (event, data) => {
+            "use strict";
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            try {
+                process.kill(data.pid)
+            } catch (e) {
+                console.log(e)
+                info.message = "错误！"
+                event.sender.send(data.callback, JSON.stringify(info));
+                return;
+            }
+            info.message = "成功！"
+            event.sender.send(data.callback, JSON.stringify(info));
+        })
+
+        // //删除书本
+        // ipc.on('deleteBook', (event, data) => {
+        //     "use strict";
+        //     let info = {
+        //         flag: false,
+        //         message: '',
+        //         data: null
+        //     }
+        //     let bookPath = path.resolve(bookUrl, './' + data.isbn)
+        //     fs.emptyDir(bookPath).then(() => {
+        //         return fs.rmdir(bookPath)
+        //     }, (err) => {
+        //         info.message = "删除失败" + err
+        //         event.sender.send(data.callback, JSON.stringify(info));
+        //     }).then(() => {
+        //         info.flag = true
+        //         info.message = "删除成功"
+        //         event.sender.send(data.callback, JSON.stringify(info));
+        //     }, (err) => {
+        //         info.message = "删除失败" + err
+        //         event.sender.send(data.callback, JSON.stringify(info));
+        //     })
+        // })
+
+        //获取配置文件的服务器地址
+        ipc.on('getServerUrl', (event, data) => {
+            "use strict";
+            let info = {
+                flag: true,
+                message: '',
+                data: null
+            }
+            info.message = "成功！"
+            info.data = config.serverUrl
+            event.sender.send(data.callback, JSON.stringify(info));
+        })
+
+        //创建二维码
+        ipc.on('createQRcode', (event, data) => {
+            let string = data.data.string
+            let outputDir = data.data.outputDir
+            let fileName = data.data.fileName
+            let options = data.data.options
+            let filePath = path.resolve(__dirname, outputDir + '/' + fileName)
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            QRCode.toFile(filePath, string, options, function (err) {
+                if (err) {
+                    console.log(err)
+                    info.message = "失败！"
+                    event.sender.send(data.callback, JSON.stringify(info));
+                }
+                else {
+                    console.log('done')
+                    info.message = "成功！"
+                    event.sender.send(data.callback, JSON.stringify(info));
+                }
+            })
+        })
+
+        //获取文件夹路径
+        ipc.on('chooseDir', (event, data) => {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            dialog.showOpenDialog({
+                'properties': ['openDirectory', 'createDirectory']
+            }, (dirPath) => {
+                if (dirPath) {
+                    info.flag = true
+                    info.message = "成功！"
+                    info.data = dirPath[0]
+                    event.sender.send(data.callback, JSON.stringify(info));
+                }
+            })
+        })
+
+        //获取文件路径队列
+        ipc.on('chooseFiles', (event, data) => {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            dialog.showOpenDialog({
+                'properties': ['openFile', 'multiSelections']
+            }, (filePath) => {
+                if (filePath) {
+                    info.flag = true
+                    info.message = "成功！"
+                    info.data = filePath
+                    event.sender.send(data.callback, JSON.stringify(info));
+                }
+            })
+        })
+
+        //获取文件夹下所有文件
+        ipc.on('getFolderFiles', (event, data) => {
+            let dirPath = data.dirPath
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            fs.readdir(dirPath, function (err, files) {
+                if (err) {
+                    info.message = "错误！==>" + err
+                    event.sender.send(data.callback, JSON.stringify(info));
+                }
+                let filesArr = []
+                files.forEach(function (filename, index) {
+                    let truePath = path.join(dirPath, filename);
+                    fs.stat(truePath, function (err, stats) {
+                        if (err) {
+                            return false
+                            info.message = "错误！==>" + err
+                            event.sender.send(data.callback, JSON.stringify(info))
+                        }
+                        //文件
+                        if (stats.isFile()) {
+                            filesArr.push({
+                                fileName: filename,
+                                path: truePath,
+                                stats: stats
+                            })
+                        } else if (stats.isDirectory()) {
+
+                        }
+
+                        if (index === files.length - 1) {
+                            info.flag = true
+                            info.message = "成功！"
+                            info.data = filesArr
+                            console.log(filesArr)
+                            event.sender.send(data.callback, JSON.stringify(info));
+                        }
+                    });
+                });
+
+            })
+
+        })
+
+        //打开文件
+        ipc.on('openFile', (event, data) => {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            let url = data.fileUrl
+            url = path.join(downloadPath, url)
+            fs.pathExists(url).then((exists) => {
+                "use strict";
+                if (!exists) {
+                    info.flag = false
+                    info.message = "文件路径不存在"
+                    event.sender.send(data.callback, JSON.stringify(info));
+                    return false;
+                }
+            })
+            let p;
+            if (process.platform !== "darwin") {
+                url = '"' + url + '"'
+                p = child.exec('start "" ' + url, (error, stdout, stderr) => {
+                    if (error) {
+                        console.log(error)
+                        info.flag = false
+                        info.message = "错误！ ->" + error
+                        event.sender.send(data.callback, JSON.stringify(info));
+                    }
+                });
+            }
+            else {
+                p = child.execFile('open', [url], (error, stdout, stderr) => {
+                    if (error) {
+                        console.log(error)
+                        info.flag = false
+                        info.message = "错误！ ->" + error
+                        event.sender.send(data.callback, JSON.stringify(info));
+                    }
+                    console.log(stdout);
+                });
+            }
+            p.on('close', (code) => {
+                "use strict";
+                console.log('线程结束标识：' + code)
+                if (!code) {
+                    info.flag = true
+                    info.message = "打开成功"
+                    event.sender.send(data.callback, JSON.stringify(info));
+                }
+            })
+        })
+
+        // 主动下载文件监听
+        ipc.on('downloadFile', function (event, data) {
+            let p = child.fork(download_process, [], {})
+
+            p.on('message', function (m) {
+                console.log(m)
+                if (m.flag === "start") {
+                    let startObj = {
+                        'id': p.pid,
+                        'itemName': m.itemName,
+                        'message': m.message
+                    }
+                    event.sender.send('downloadStart', JSON.stringify(startObj));
+                }
+                else if (m.flag === "fail") {
+                    let stopObj = {
+                        'id': p.pid,
+                        'itemName': m.itemName,
+                        'message': m.message
+                    }
+                    event.sender.send('downloadFailed', JSON.stringify(stopObj));
+                }
+                else if (m.flag === "success") {
+                    let successObj = {
+                        'id': p.pid,
+                        'itemName': m.itemName,
+                        'message': m.message
+                    }
+                    event.sender.send('downloadSuccess', JSON.stringify(successObj))
+                }
+                else if (m.flag === "progress") {
+                    let progressObj = {
+                        'id': p.pid,
+                        'progress': m.data
+                    }
+                    event.sender.send('downloadProgress', JSON.stringify(progressObj));
+                }
+            })
+
+            p.on('close', (code) => {
+                console.log("process EXIT code:" + code)
+            })
+
+            if (!data.url) {
+                return false;
+            }
+            if (data.dialog) {
+                dialog.showOpenDialog({
+                    'properties': ['openDirectory', 'createDirectory']
+                }, (dirPath) => {
+                    if (dirPath) {
+                        p.send({
+                            type: 1,
+                            url: data.url,
+                            newName: data.newName,
+                            dirPath: dirPath[0]
+                        })
+                    } else {
+                        console.log("用户取消下载")
+                    }
+                })
+            } else {
+                p.send({
+                    type: 1,
+                    url: data.url,
+                    newName: data.newName,
+                    dirPath: downloadPath
+                })
+            }
+            // 设置下载路径
+
+        })
+
+        // 上传文件监听
+        ipc.on('uploadFiles', function (event, data) {
+
+            let p = child.fork(upload_process, [], {})
+
+            p.on('message', function (m) {
+                if (m.flag === "start") {
+                    let startObj = {
+                        'id': p.pid,
+                        'message': m.message
+                    }
+                    event.sender.send('uploadStart', JSON.stringify(startObj));
+                }
+                else if (m.flag === "fail") {
+                    let stopObj = {
+                        'id': p.pid,
+                        'message': m.message
+                    }
+                    event.sender.send('uploadFailed', JSON.stringify(stopObj));
+                }
+                else if (m.flag === "success") {
+                    let successObj = {
+                        'id': p.pid,
+                        'message': m.message,
+                        'data': m.data
+                    }
+                    event.sender.send('uploadSuccess', JSON.stringify(successObj))
+                }
+                else if (m.flag === "progress") {
+                    let progressObj = {
+                        'id': p.pid,
+                        'progress': m.data
+                    }
+                    event.sender.send('uploadProgress', JSON.stringify(progressObj));
+                }
+            })
+
+            p.on('close', (code) => {
+                console.log("process EXIT code:" + code)
+            })
+            dialog.showOpenDialog({
+                properties: ['openFile', 'multiSelections']
+            }, (files) => {
+                if (files) {
+                    p.send({
+                        data: data,
+                        files: files
+                    })
+                } else {
+                    console.log("用户取消了上传");
+                }
+            })
+        })
 
     },
     windowListener: (win) => { // 程序最小化
 
-        ipc.on('minimize', function(event) {
+        ipc.on('minimize', function (event) {
             win.minimize()
             console.log("ok")
         })
 
         // 程序最大化
 
-        ipc.on('Maximization', function(event) {
+        ipc.on('Maximization', function (event) {
             win.maximize()
         })
 
         // 退出程序
-        ipc.on('exit', function(event) {
+        ipc.on('exit', function (event) {
             app.quit();
         })
 
         // 全屏
-        ipc.on('fullscreen', function(event) {
+        ipc.on('fullscreen', function (event) {
             if (!win.isFullScreen()) {
                 win.setFullScreen(true)
             } else {
@@ -99,240 +523,80 @@ const appEvent = {
         })
 
         // 开发者工具
-        ipc.on('developTools', function(event) {
+        ipc.on('developTools', function (event) {
             win.webContents.toggleDevTools()
 
         })
 
-        ipc.on('stopUpload', function(event, data) {
-            // console.log(uploadArr[id]);
-            if (uploadArr[data.id]) {
-                uploadArr[data.id].req.abort();
-                event.sender.send(data.callback, "成功");
-            } else {
-                event.sender.send(data.callback, "失败");
-            }
-        })
-        //
-        ipc.on('stopDownload', function(event, data) {
-            // console.log(uploadArr[id]);
-            if (downloadArr[data.id]) {
-                // console.log(downloadArr[data.id])
-                downloadArr[data.id].req.abort();
-                event.sender.send(data.callback, "成功");
-            } else {
-                event.sender.send(data.callback, "失败");
-            }
-        })
-
-        // 监听下载事件
+        // 监听window默认下载事件
         win.webContents.session.on('will-download', (event, item, webContents) => {
             event.preventDefault();
-            var itemName = item.getFilename();
-            var itemUrl = item.getURL();
-            var itemSize = item.getTotalBytes();
+            let itemName = item.getFilename();
+            let itemUrl = item.getURL();
+            let itemSize = item.getTotalBytes();
+
+            let p = child.fork(download_process, [], {})
+
+            p.on('message', function (m) {
+                console.log(m)
+                if (m.flag === "start") {
+                    let startObj = {
+                        'id': p.pid,
+                        'itemName': itemName,
+                        'message': m.message
+                    }
+                    win.webContents.send('downloadStart', JSON.stringify(startObj));
+                }
+                else if (m.flag === "fail") {
+                    let stopObj = {
+                        'id': p.pid,
+                        'itemName': itemName,
+                        'message': m.message
+                    }
+                    win.webContents.send('downloadFailed', JSON.stringify(stopObj));
+                }
+                else if (m.flag === "success") {
+                    let successObj = {
+                        'id': p.pid,
+                        'itemName': itemName,
+                        'message': m.message
+                    }
+                    win.webContents.send('downloadSuccess', JSON.stringify(successObj))
+                }
+                else if (m.flag === "progress") {
+                    let progressObj = {
+                        'id': p.pid,
+                        'progress': m.data
+                    }
+                    win.webContents.send('downloadProgress', JSON.stringify(progressObj));
+                }
+            })
+
+            p.on('close', (code) => {
+                console.log("process EXIT code:" + code)
+            })
+
             // 设置下载路径
             dialog.showOpenDialog({
                 'properties': ['openDirectory', 'createDirectory']
             }, (dirPath) => {
                 if (dirPath) {
                     let filePath = path.resolve(__dirname, dirPath[0] + '/' + itemName);
-                    let download_id = downloadNum;
-                    // 文件重命名
-                    fileAutoRename(dirPath, filePath, itemName, 0, (newFilePath) => {
-                        let writerStream = fs.createWriteStream(newFilePath)
-                        writerStream.on('error', (err) => {
-                            let stopObj = {
-                                'id': download_id,
-                                'itemName': itemName,
-                                'message': "文件写入失败"
-                            }
-                            delete downloadArr[download_id];
-                            win.webContents.send('downloadFailed', JSON.stringify(stopObj));
-                        });
-                        let fileSize = 0;
-                        let startObj = {
-                            'id': download_id,
-                            'itemName': itemName,
-                            "message": "开始下载"
-                        }
-                        win.webContents.send('downloadStart', JSON.stringify(startObj));
-                        downloadArr[download_id] = request(itemUrl, (error, response, body) => {
-                            if (!error) {
-                                let successObj = {
-                                    'id': download_id,
-                                    'itemName': itemName,
-                                    'message': "下载成功"
-                                }
-                                delete downloadArr[download_id];
-                                win.webContents.send('downloadSuccess', JSON.stringify(successObj));
-                            } else {
-                                let stopObj = {
-                                    'id': download_id,
-                                    'itemName': itemName,
-                                    'message': "网络连接失败"
-                                }
-                                delete downloadArr[download_id];
-                                win.webContents.send('downloadFailed', JSON.stringify(stopObj));
-                            }
-                            writerStream.end();
-                        }).on('response', (res) => {
-                            console.log(res.headers['content-disposition'].replace(/attachment; filename=/, ''))
-                        }).on('data', (data) => {
-                            // decompressed data as it is received
-                            writerStream.write(data);
-                            fileSize += data.length;
-                            let progress = fileSize / itemSize
-                            let progressObj = {
-                                'id': download_id,
-                                'progress': progress
-                            }
-                            win.webContents.send('downloadProgress', JSON.stringify(progressObj));
-                        })
+                    p.send({
+                        type: 0,
+                        itemUrl: itemUrl,
+                        dirPath: dirPath,
+                        filePath: filePath,
+                        itemName: itemName,
+                        itemSize: itemSize
                     })
+
                 } else {
                     console.log("用户取消下载")
                 }
-                downloadNum++;
             })
         })
 
-        // 下载文件监听
-        ipc.on('downloadFile', function(event, url) {
-            // 设置下载路径
-            dialog.showOpenDialog({
-                'properties': ['openDirectory', 'createDirectory']
-            }, (dirPath) => {
-                if (dirPath) {
-                    let download_id = downloadNum;
-                    let itemName = '';
-                    let writerStream;
-                    let fileSize = 0;
-                    let itemSize = 0;
-                    downloadArr[download_id] = request(url, (error, response, body) => {
-                        if (!error) {
-                            let successObj = {
-                                'id': download_id,
-                                'itemName': itemName,
-                                'message': "下载成功"
-                            }
-                            delete downloadArr[download_id];
-                            win.webContents.send('downloadSuccess', JSON.stringify(successObj));
-                        } else {
-                            let stopObj = {
-                                'id': download_id,
-                                'itemName': itemName,
-                                'message': "网络连接失败"
-                            }
-                            delete downloadArr[download_id];
-                            win.webContents.send('downloadFailed', JSON.stringify(stopObj));
-                        }
-                        writerStream.end();
-                    }).on('data', (data) => {
-                        // decompressed data as it is received
-                        writerStream.write(data);
-                        fileSize += data.length;
-                        let progress = fileSize / itemSize
-                        let progressObj = {
-                            'id': download_id,
-                            'progress': progress
-                        }
-                        win.webContents.send('downloadProgress', JSON.stringify(progressObj));
-                    }).on('response', (res) => {
-                        itemName = res.headers['content-disposition'].replace(/attachment; filename=/, '');
-                        itemSize = parseInt(res.headers['content-length'])
-                        let filePath = path.resolve(__dirname, dirPath[0] + '/' + itemName);
-                        writerStream = fs.createWriteStream(filePath)
-                        writerStream.on('error', (err) => {
-                            let stopObj = {
-                                'id': download_id,
-                                'itemName': itemName,
-                                'message': "文件写入失败"
-                            }
-                            delete downloadArr[download_id];
-                            win.webContents.send('downloadFailed', JSON.stringify(stopObj));
-                        });
-                        let startObj = {
-                            'id': download_id,
-                            'itemName': itemName,
-                            "message": "开始下载"
-                        }
-                        win.webContents.send('downloadStart', JSON.stringify(startObj));
-                    })
-                } else {
-                    console.log("用户取消下载")
-                }
-                downloadNum++;
-            })
-        })
-
-        // 上传文件监听
-
-        ipc.on('uploadFiles', function(event, data) {
-            dialog.showOpenDialog({
-                properties: ['openFile', 'multiSelections']
-            }, (files) => {
-                if (files) {
-                    let upload_id = downloadNum;
-                    let fileWholeSize = 0;
-                    let uploadUrl = data.url
-                    delete data.url
-                    let fileArr = [];
-                    files.forEach((el, index) => {
-                        console.log(index);
-                        console.log(el);
-                        let fileObj = fs.statSync(el)
-                        console.log(fileObj.size);
-                        fileWholeSize += fileObj.size
-                        fileArr.push(fs.createReadStream(files[index]))
-                    })
-                    data.upload_file = fileArr[0]
-                    let timer;
-                    let startObj = {
-                        'id': upload_id,
-                        'message': '开始上传'
-                    }
-                    win.webContents.send('uploadStart', JSON.stringify(startObj));
-                    console.log("上传中...");
-                    uploadArr[upload_id] = request.post({
-                        url: uploadUrl,
-                        formData: data
-                    }, function optionalCallback(err, httpResponse, body) {
-                        if (err) {
-                            let failObj = {
-                                'id': upload_id,
-                                'message': '上传失败'
-                            }
-                            delete uploadArr[upload_id];
-                            win.webContents.send('uploadFailed', JSON.stringify(failObj));
-                            return console.error('upload failed:', err);
-                        }
-                        console.log('上传ok');
-                        // clearInterval(timer);
-                        let successObj = {
-                            'id': upload_id,
-                            'message': '上传成功'
-                        }
-                        delete uploadArr[upload_id];
-                        win.webContents.send('uploadSuccess', JSON.stringify(successObj));
-                    }).on('drain', (data) => {
-                        console.log(uploadArr[upload_id].req.connection._bytesDispatched)
-                        console.log(fileWholeSize)
-                        console.log(uploadArr[upload_id].req.connection._httpMessage._headers['content-length'])
-                        let progress = uploadArr[upload_id].req.connection._bytesDispatched / fileWholeSize;
-                        let progressObj = {
-                            'id': upload_id,
-                            'progress': progress
-                        }
-                        win.webContents.send('uploadProgress', JSON.stringify(progressObj));
-                        console.log(progress)
-                    })
-
-                } else {
-                    console.log("用户取消了上传");
-                }
-            })
-        })
     }
 }
 
@@ -345,25 +609,6 @@ const fileDelete = (filePath) => {
         console.log("删除成功");
     }, () => {
         console.log("删除失败");
-    })
-}
-
-// 重名检测
-const fileAutoRename = (dirPath, filePath, itemName, num, callback) => {
-    if (!num) {
-        num = 0;
-    }
-    fs.pathExists(filePath).then((exists) => {
-        if (exists) {
-            // console.log(filePath);
-            num++;
-            filePath = path.resolve(__dirname, dirPath + '/' + '(' + num + ')' + itemName)
-            fileAutoRename(dirPath, filePath, itemName, num, callback);
-        } else {
-            if (callback) {
-                callback(filePath)
-            }
-        }
     })
 }
 

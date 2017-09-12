@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ebook3.0</title>
+</head>
+<script>
+    var serverUrl = ""
+</script>
+<body>
+<h1>cherry V1.0</h1>
+<h4>Shayne C出品</h4>
+<p class="serverUrl">当前的服务器地址：</p>
+
+<button onclick="getServerUrl()">获取服务器地址</button>
+<button onclick="post()">post请求（json）</button>
+<button onclick="post2()">post请求(非json)</button>
+<button onclick="get()">get请求</button>
+<button onclick="get2()">get_query请求(带参数)</button>
+<button onclick="get()">查找文件是否存在</button>
+<input class="pid" type="text">
+<button onclick="killProcess($('.pid').val())">杀进程</button>
+<button onclick="deleteBook('jckj')">删除文件夹</button>
+<button onclick="chooseDir()">获取文件夹路径</button>
+<button onclick="createQRcode()">创建二维码</button>
+<button onclick="chooseFiles()">获取文件路径队列</button>
+<button onclick="getFolderFiles()">获取文件夹下载所有文件</button>
+<button onclick="openFile('93d52a82cc9d22dd664fd3911c433e0d (1).png')">打开文件</button>
+<button onclick="max()">最大化</button>
+<button onclick="min()">最小化</button>
+<button onclick="exitApp()">关闭</button>
+<button onclick="fullscreen()">全屏（F11）</button>
+<button onclick="developTools()">开发者工具（ctrl + shift + i）</button>
+<input type="text" name="" value="">
+<button type="button" name="button" onclick="uploadFiles({
+        'url':serverUrl + '/api/fileUpload.html',
+        'data':{
+            'files': 'uploadFile',
+            'url': '/ebookV3',
+            'createUser': 'FEAD77FF0737650B0BFB5F4056EE735C',
+            'roleType':3
+        }
+    })">上传文件测试
+</button>
+<a target="_blank" href="http://pan.tes-sys.com/tesfs/file/download.html?id=4E650CAD972874984AEF1B3C996FD28C">自动下载测试</a>
+<a target="_blank"
+   href="http://pan.tes-sys.com/tesfs/file/download.html?id=F462F267203AB7E683E318322641D264">自动下载测试2</a>
+<button class="download" type="button"
+        url="http://pan.tes-sys.com/tesfs/file/download.html?id=F462F267203AB7E683E318322641D264" name="button">手动下载测试
+</button>
+<button class="download" type="button"
+        url="http://pan.tes-sys.com/tesfs/file/download.html?id=4E650CAD972874984AEF1B3C996FD28C" name="button">手动下载测试
+</button>
+
+<p>下载进度：</p>
+<div class="progress" style="height:10px;background:#47f3fe;width:0px;margin-top:20px"><span></span></div>
+</body>
+<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+<script type="text/javascript">
+    //打开文件
+    function openFile(fileUrl) {
+        app.send('openFile', {
+            fileUrl: fileUrl,
+            callback: 'openFileCallback'
+        })
+        app.once('openFileCallback', function (event, mess) {
+            alert(mess)
+        })
+    }
+
+
+    // 获取文件夹下所有文件
+    function getFolderFiles() {
+        chooseDir(function (url) {
+            app.send('getFolderFiles', {
+                dirPath: url,
+                callback: 'getFolderFilesCallback'
+            })
+            app.once('getFolderFilesCallback', function (event, mess) {
+                alert(mess)
+            })
+        })
+    }
+
+
+    // 获取文件路径队列
+    function chooseFiles(callback) {
+        app.send('chooseFiles', {
+            callback: 'chooseFilesCallback'
+        })
+        app.once('chooseFilesCallback', function (event, mess) {
+            if (callback) {
+                console.log(mess)
+                callback(JSON.parse(mess).data)
+            }
+            else
+                alert(mess)
+        })
+    }
+
+    // 创建二维码
+    function createQRcode() {
+        chooseDir(function (url) {
+            app.send('createQRcode', {
+                data: {
+                    string: '你放',
+                    outputDir: url,
+                    fileName: "test.svg",
+                    options: {
+                        type: 'svg',
+                        color: {
+                            dark: '#000000',  // Blue dots
+                            light: '#ffffff00', // Transparent background
+                            scale: 4,
+                            margin: 4
+                        },
+                        errorCorrectionLevel: 'Q'
+                    }
+                },
+                callback: 'createQRcodeCallback'
+            })
+            app.once('createQRcodeCallback', function (event, mess) {
+                alert(mess)
+            })
+        })
+    }
+
+
+    // 获取文件夹路径
+    function chooseDir(callback) {
+        app.send('chooseDir', {
+            callback: 'chooseDirCallback'
+        })
+        app.once('chooseDirCallback', function (event, mess) {
+            if (callback) {
+                console.log(mess)
+                callback(JSON.parse(mess).data)
+            }
+            else
+                alert(mess)
+        })
+    }
+
+    // 创建空db -- 测试用
+    function createUserDb() {
+        app.send('createUserDb', {
+            callback: 'createUserDbCallback'
+        })
+        app.once('createUserDbCallback', function (event, mess) {
+            alert(mess)
+        })
+    }
+
+
+    // 获取服务器地址
+    function getServerUrl() {
+        app.send('getServerUrl', {
+            callback: 'getServerUrlCallback'
+        })
+        app.once('getServerUrlCallback', function (event, mess) {
+            alert('获取服务器地址成功\n' + mess)
+            serverUrl = JSON.parse(mess).data
+            $(".serverUrl").html('当前服务器地址为：' + serverUrl)
+        })
+    }
+
+    // 上传文件接口--这里的上传文件是指上传至网盘，相应的参数参考网盘上传的api
+    function uploadFiles(data) {
+        app.send('uploadFiles', data)
+    }
+
+    // post请求接口
+    function post() {
+        app.send('httpPost', {
+            url: 'http://es.tes-sys.com/weare/login',
+            data: {
+                username: 'chenshenhao',
+                password: 'chenshenhao'
+            },
+            callback: 'httpPostCallback'
+        })
+        app.once('httpPostCallback', function (event, mess) {
+            alert('post请求成功\n' + mess)
+        })
+    }
+
+    // 新建教学过程
+    function addProcess() {
+        app.send('addProcess', {
+            info: {
+                'book_id': 'math',
+                'user_id': 'chenshenhao',
+                'page_id': 'chenshenhao',
+                'count': '测试',
+                'pos_x': '测试',
+                'pos_y': '测试'
+            },
+            data: [{
+                'file_id': '测试',
+                'detail_index': 0,
+                'file_name': '测试',
+                'ext_name': '测试',
+                'edit_name': '测试',
+                'convert_name': 'test.html',
+                'download_url': 'aaaaaaaaaa',
+                'view_url': 'bbbbbbbbbbb'
+            }],
+            callback: 'addProcessCallback'
+        })
+        app.once('addProcessCallback', function (event, mess) {
+            alert('新建教学过程请求成功\n' + mess)
+        })
+    }
+
+    function fileIsExsit() {
+        app.send('fileIsExsit', {
+            fileName: 'aaa.a',
+            callback: 'fileIsExsitCallback'
+        })
+        app.once('fileIsExsitCallback', function (event, mess) {
+            alert('查找文件id请求成功\n' + mess)
+        })
+    }
+
+    function fileIsDownloaded() {
+        app.send('fileIsDownloaded', {
+            file_id: '编辑教学过程测试',
+            callback: 'fileIsDownloadedCallback'
+        })
+        app.once('fileIsDownloadedCallback', function (event, mess) {
+            alert('更新文件下载状态成功\n' + mess)
+        })
+    }
+
+    function loadProcess() {
+        app.send('loadProcess', {
+            data: {
+                'book_id': 'shuxue',
+                'user_id': 'chenshenhao'
+            },
+            callback: 'loadProcessCallback'
+        })
+        app.once('loadProcessCallback', function (event, mess) {
+            alert('获取教学过程成功\n' + mess)
+        })
+    }
+
+    function exportProcess() {
+        app.send('exportProcess', {
+            data: {
+                'book_id': 'shuxue',
+                'user_id': 'chenshenhao'
+            },
+            callback: 'exportProcessCallback'
+        })
+        app.once('exportProcessCallback', function (event, mess) {
+            alert('导出教学过程成功\n' + mess)
+        })
+    }
+
+    function downloadBooks(isbn) {
+        app.send('downloadBooks', {
+            isbn: isbn,
+            callback: 'downloadBooksCallback'
+        })
+    }
+
+    app.on('downloadBooksCallback', function (event, mess) {
+//            let info = {
+//                flag: null,//flag='start'/'success'/'fail'/'progress'四种形式
+//                message: '',
+//                data: null,
+//                pid:null//进程的id，可调用killProcess方法杀死进程
+//            }
+        var obj = JSON.parse(mess)
+        console.log(obj)
+
+        if (obj.flag === 'start') {
+            $("body").append('<p>当前子进程:' + obj.pid + '</p>');
+        }
+    })
+
+    function deleteBook(isbn) {
+        app.send('deleteBook', {
+            isbn: isbn,
+            callback: 'deleteBookCallback'
+        })
+        app.once('deleteBookCallback', function (event, mess) {
+            var obj = JSON.parse(mess)
+            alert(mess)
+        })
+    }
+
+    //kill进程
+    function killProcess(pid) {
+        app.send('killProcess', {
+            pid: pid,
+            callback: 'killProcessCallback'
+        })
+        app.once('killProcessCallback', function (event, mess) {
+            alert(mess)
+        })
+    }
+
+    //    获取教材列表
+    function getBookList(bookArr) {
+        app.send('getBookList', {
+            bookArr: bookArr,
+            callback: 'getBookListCallback'
+        })
+        app.once('getBookListCallback', function (event, mess) {
+            alert(mess)
+        })
+    }
+
+    // 删除教学过程
+    function deleteProcess() {
+        app.send('deleteProcess', {
+            process_id: 'c543cbca28c94b69859dd81f64c09e09',
+            callback: 'deleteProcesssCallback'
+        })
+        app.once('deleteProcesssCallback', function (event, mess) {
+            alert('删除教学过程成功\n' + mess)
+        })
+    }
+
+    //加载教学过程的文件
+    function loadProcessFilesArr(arr) {
+        arr.forEach(function (el, index) {
+            loadProcessFiles(el);
+        })
+    }
+
+    //根据教学过程读取教学过程的文件
+
+    function loadProcessFiles(id) {
+        app.send('loadProcessFiles', {
+            process_id: id,
+            callback: 'loadProcessFilesCallback' + id
+        })
+        app.once('loadProcessFilesCallback' + id, function (event, mess) {
+            console.log(mess)
+        })
+    }
+
+    // 修改教学过程
+    function editProcess() {
+        app.send('editProcess', {
+            info: {
+                'id': 'fa31a0618097446baf9727353ba3ef29',
+                'pos_x': 121,
+                'pos_y': 333,
+                'count': 4,
+            },
+            data: [{
+                'file_id': '编辑教学过程测试',
+                'detail_index': 0,
+                'file_name': '编辑教学过程测试',
+                'ext_name': '编辑教学过程测试',
+                'edit_name': '编辑教学过程测试',
+                'convert_name': 'hello.html',
+                'download_url': 'ccccccc',
+                'view_url': 'ddddddd',
+                'isDownload': 0
+            }],
+            callback: 'editProcessCallback'
+        })
+        app.once('editProcessCallback', function (event, mess) {
+            alert('编辑教学过程请求成功\n' + mess)
+        })
+    }
+
+    // get请求接口
+    function get() {
+        app.send('httpGet', {
+            url: 'http://es.tes-sys.com/weare/getWholeProjectTeam',
+            callback: 'httpGetCallback'
+        })
+        app.once('httpGetCallback', function (event, mess) {
+            alert('get请求成功\n' + mess)
+        })
+    }
+
+    // get_query接口
+    function get2() {
+        app.send('httpGet_Query', {
+            url: 'http://192.168.109.229:8080/skydisk-ms/api/dirList.html',
+            data: {
+                'd': '3D916361504ED86D22CD23A3C720E867',
+                'url': '/',
+                'user_id': '9AE969E5687D99F7664C140AA4C73B48',
+                'order_name': 'name',
+                'order_type': 'asc',
+                'disk_type': 2,
+                'singlePage_fileNum': 10,
+                'no': 1
+            },
+            callback: 'httpGetCallback'
+        })
+        app.once('httpGetCallback', function (event, mess) {
+            alert('get请求成功\n' + JSON.parse(mess))
+        })
+    }
+
+    // 最小化接口
+    function min() {
+        app.send('minimize')
+    }
+
+    // 最大化接口
+    function max() {
+        app.send('Maximization')
+    }
+
+    // 退出app接口
+    function exitApp() {
+        app.send('exit')
+    }
+
+    // 全屏接口
+    function fullscreen() {
+        app.send('fullscreen')
+    }
+
+    // 开发者工具接口
+    function developTools() {
+        app.send('developTools')
+    }
+
+    //    $(".stopUpload").click(function (event) {
+    //        var id = $(this).attr('uploadid');
+    //        // 停止上传接口
+    //        app.send('stopUpload', {
+    //            id: id,
+    //            callback: 'stopUploadCallback'
+    //        })
+    //        app.once('stopUploadCallback', function (event, mess) {
+    //            alert("停止上传" + mess)
+    //        })
+    //    });
+    //    $(".stopDownload").click(function (event) {
+    //        var id = $(this).attr('downloadid');
+    //        // 停止下载接口
+    //        app.send('stopDownload', {
+    //            id: id,
+    //            callback: 'stopDownloadCallback'
+    //        })
+    //        app.once('stopDownloadCallback', function (event, mess) {
+    //            alert("停止下载" + mess)
+    //        })
+    //    });
+    $(".download").click(function (event) {
+        var url = $(this).attr('url');
+        // 下载固定地址的文件接口
+        var data = {
+            url: url,
+            dialog: false,
+            newName: 'test.zip'
+        }
+        app.send('downloadFile', data)
+    });
+
+
+    app.on('uploadStart', (event, message) => {
+        let obj = JSON.parse(message);
+        console.log(obj.id)
+        console.log("开始上传");
+        $(".stopUpload").attr('uploadid', obj.id);
+        $("body").append('<p>当前子进程:' + obj.id + '</p>');
+    })
+    app.on('downloadStart', (event, message) => {
+        let obj = JSON.parse(message);
+        console.log(obj.id)
+        console.log("开始下载");
+        $(".stopDownload").attr('downloadid', obj.id);
+        $("body").append('<p>当前子进程:' + obj.id + '</p>');
+    })
+
+
+    const downloadSuccess = (event, message) => {
+        let obj = JSON.parse(message);
+        // let webview = document.getElementById('webview');
+        // webview.send('downloadSuccess', message);
+        console.log(obj.id + obj.message)
+    };
+    const downloadProgress = (event, message) => {
+        let obj = JSON.parse(message);
+        // let webview = document.getElementById('webview');
+        // webview.send('downloadProgress', message);
+        console.log("下载任务" + obj.id + ":" + obj.progress)
+    };
+    const downloadStart = (event, message) => {
+        let obj = JSON.parse(message);
+        // let webview = document.getElementById('webview');
+        // webview.send('downloadStart', message);
+        console.log(obj.id + obj.message)
+    };
+    const downloadFailed = (event, message) => {
+        let obj = JSON.parse(message);
+        // let webview = document.getElementById('webview');
+        // webview.send('downloadFailed', message);
+        console.log(obj.id + obj.message)
+    };
+    const uploadSuccess = (event, message) => {
+        let obj = JSON.parse(message);
+        // let webview = document.getElementById('webview');
+        // webview.send('uploadSuccess', message);
+        console.log(obj.id + obj.message + obj.data)
+    };
+    const uploadProgress = (event, message) => {
+        let obj = JSON.parse(message);
+        // let webview = document.getElementById('webview');
+        // webview.send('uploadProgress', message);
+        console.log("上传" + obj.id + ":" + obj.progress)
+    };
+    const uploadStart = (event, message) => {
+        let obj = JSON.parse(message);
+        // let webview = document.getElementById('webview');
+        // webview.send('uploadStart', message);
+        console.log(obj.id + obj.message)
+    };
+    const uploadFailed = (event, message) => {
+        let obj = JSON.parse(message);
+        // let webview = document.getElementById('webview');
+        // webview.send('uploadFailed', message);
+        console.log(obj.id + obj.message)
+    };
+
+
+    app.on('uploadProgress', uploadProgress)
+    // app.on('uploadStart', uploadStart)
+    app.on('uploadSuccess', uploadSuccess)
+    app.on('uploadFailed', uploadFailed)
+    app.on('downloadProgress', downloadProgress)
+    // app.on('downloadStart', downloadStart)
+    app.on('downloadSuccess', downloadSuccess)
+    app.on('downloadFailed', downloadFailed)
+
+    // 上传、下载相关接口-----》
+    // 其中，返回的message中有相应的itemID，可根据相应的id设定相应的进度条、停止等控制
+    // 下载模块返回值
+    // let startObj = {
+    //  'id': p.pid,
+    //  'itemName': m.itemName,
+    //  'message': m.message
+    // }
+    // let stopObj = {
+    //  'id': p.pid,
+    //  'itemName': m.itemName,
+    //  'message': m.message
+    // }
+    // let successObj = {
+    //  'id': p.pid,
+    //  'itemName': m.itemName,
+    //  'message': m.message
+    // }
+    // let progressObj = {
+    //  'id': p.pid,
+    //  'progress': m.data
+    // }
+    // app.on('uploadProgress', uploadProgress)
+    // app.on('uploadStart', uploadStart)
+    // app.on('uploadSuccess', uploadSuccess)
+    // app.on('uploadFailed', uploadFailed)
+    // app.on('downloadProgress', downloadProgress)
+    // app.on('downloadStart', downloadStart)
+    // app.on('downloadSuccess', downloadSucess)
+    // app.on('downloadFailed', downloadFailed)
+    // json配置文件设置
+    // {
+    //  // app名称
+    //  "title": "ebook3.0",
+    //  // 是否使用http服务
+    //  "useServer": true,
+    //  // 本地http服务设置
+    //  "localServerConfig": {
+    //  // 端口
+    //  "PORT": 53480,
+    //// 根目录
+    //"root": "html"
+    // },
+    //  // 初始宽度
+    //  "width": 800,
+    //  // 初始高度
+    //  "height": 600,
+    //  // 最小宽度
+    //  "minWidth": 800,
+    //  // 最小高度
+    //  "minHeight": 600,
+    //  // 全屏模式
+    //  "fullscreen": false,
+    //  // 是否允许全屏
+    //  "fullscreenable": true,
+    //  // 静态根目录
+    //  "staticUrl":"html/doc.html",
+    //  // 本地数据库目录
+    //  "dbUrl": "userData/user.db",
+    //  // 默认资源下载地址
+    //  "downloadPath": "userData",
+    //  // 书本下载目录
+    //  "bookUrl": "html/books",
+    //  // 允许下载书本内容时的最大线程数
+    //  "downloadMaxThread": 5,
+    //  // 服务器地址
+    //  "serverUrl": "http://es.tes-sys.com/ebook_services",
+    //  // 书本下载url
+    //  "bookApiUrl": "/update/bymd5str.html"
+    // }
+</script>
+
+</html>

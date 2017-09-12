@@ -1,0 +1,17 @@
+{
+    "title": "cherry",
+    "useServer": false,
+    "localServerConfig": {
+        "PORT": 53480,
+        "root": "html"
+    },
+    "width": 800,
+    "height": 600,
+    "minWidth": 800,
+    "minHeight": 600,
+    "fullscreen": false,
+    "fullscreenable": true,
+    "staticUrl":"html/doc.html",
+    "downloadPath": "downloads",
+    "serverUrl": "http://es.tes-sys.com/ebook_services"
+}
