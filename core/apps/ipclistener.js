@@ -17,8 +17,8 @@ const sqlite3 = require('sqlite3').verbose();
 // const uuid = require('uuid')
 // const moment = require('moment');
 const child = require('child_process')
-const download_process = path.resolve(__dirname, __dirname + '/download.js')
-const upload_process = path.resolve(__dirname, __dirname + '/upload.js')
+const download_process = path.resolve(__dirname, './download.js')
+const upload_process = path.resolve(__dirname, './upload.js')
 const downloadPath = path.resolve(__dirname, '../../app/' + config.downloadPath)
 const QRCode = require('qrcode')
 
@@ -26,7 +26,7 @@ const QRCode = require('qrcode')
 const appEvent = {
     appListener: () => {
 
-        // post请求
+        // post请求,json
 
         ipc.on('httpPost', function (event, data) {
             let info = {
@@ -52,66 +52,42 @@ const appEvent = {
             });
         })
 
+        // post请求 - form模式
+        ipc.on('httpPost_form', function (event, data) {
+            console.log(data)
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            request.post({
+                url: data.url,
+                form: data.data
+            }, function optionalCallback(err, httpResponse, body) {
+                if (err) {
+                    info.message = err
+                    event.sender.send(data.callback, info);
+                    return console.error('error:', err)
+                }
+                info.flag = true
+                info.message = "请求成功"
+                info.data = body
+                info = JSON.stringify(info)
+                event.sender.send(data.callback, info);
+            });
+        })
+
         // get请求
-
         ipc.on('httpGet', function (event, data) {
+            console.log(data.data)
             let info = {
                 flag: false,
                 message: '',
                 data: null
             }
             request.get({
-                url: data.url
-            }, function optionalCallback(err, httpResponse, body) {
-                if (err) {
-                    info.message = err;
-                    event.sender.send(data.callback, info);
-                    return console.error('error:', err)
-                }
-                info.flag = true
-                info.message = "请求成功"
-
-                info.data = body
-                info = JSON.stringify(info)
-                event.sender.send(data.callback, info);
-            });
-        })
-
-        // get请求(非json)
-
-        // ipc.on('httpGet', function (event, data) {
-        //     let info = {
-        //         flag: false,
-        //         message: '',
-        //         data: null
-        //     }
-        //     request.get({
-        //         url: data.url
-        //     }, function optionalCallback(err, httpResponse, body) {
-        //         if (err) {
-        //             info.message = err;
-        //             event.sender.send(data.callback, info);
-        //             return console.error('error:', err)
-        //         }
-        //         info.flag = true
-        //         info.message = "请求成功"
-        //
-        //         info.data = body
-        //         info = JSON.stringify(info)
-        //         event.sender.send(data.callback, info);
-        //     });
-        // })
-
-        // get请求query方式
-        ipc.on('httpGet_Query', function (event, data) {
-            let info = {
-                flag: false,
-                message: '',
-                data: null
-            }
-            var stringify = querystring.stringify(data.data);
-            request.get({
-                url: data.url + '?' + stringify
+                url: data.url,
+                qs: data.data
             }, function optionalCallback(err, httpResponse, body) {
                 if (err) {
                     info.message = err;
@@ -126,26 +102,34 @@ const appEvent = {
             });
         })
 
-        // // 查找文件是否存在
-        // ipc.on('fileIsExsit', (event, data) => {
-        //     let info = {
-        //         flag: false,
-        //         message: '',
-        //         data: null
-        //     }
-        //     let filePath = path.resolve(downloadPath, './' + data.fileName)
-        //     fs.pathExists(filePath).then((exists) => {
-        //         if (exists) {
-        //             info.flag = true
-        //             info.message = "文件已存在"
-        //             event.sender.send(data.callback, JSON.stringify(info));
-        //         } else {
-        //             info.flag = false
-        //             info.message = "文件不存在"
-        //             event.sender.send(data.callback, JSON.stringify(info));
-        //         }
-        //     })
-        // })
+        // 查找文件是否存在
+        ipc.on('fileIsExsit', (event, data) => {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            let filePath
+            try{
+                filePath = path.normalize(data.filePath)
+            }catch (e){
+                info.flag = false
+                info.message = "文件路径有误"
+                event.sender.send(data.callback, JSON.stringify(info));
+                return false
+            }
+            fs.pathExists(filePath).then((exists) => {
+                if (exists) {
+                    info.flag = true
+                    info.message = "文件已存在"
+                    event.sender.send(data.callback, JSON.stringify(info));
+                } else {
+                    info.flag = false
+                    info.message = "文件不存在"
+                    event.sender.send(data.callback, JSON.stringify(info));
+                }
+            })
+        })
 
         //删除进程
         ipc.on('killProcess', (event, data) => {
@@ -167,29 +151,35 @@ const appEvent = {
             event.sender.send(data.callback, JSON.stringify(info));
         })
 
-        // //删除书本
-        // ipc.on('deleteBook', (event, data) => {
-        //     "use strict";
-        //     let info = {
-        //         flag: false,
-        //         message: '',
-        //         data: null
-        //     }
-        //     let bookPath = path.resolve(bookUrl, './' + data.isbn)
-        //     fs.emptyDir(bookPath).then(() => {
-        //         return fs.rmdir(bookPath)
-        //     }, (err) => {
-        //         info.message = "删除失败" + err
-        //         event.sender.send(data.callback, JSON.stringify(info));
-        //     }).then(() => {
-        //         info.flag = true
-        //         info.message = "删除成功"
-        //         event.sender.send(data.callback, JSON.stringify(info));
-        //     }, (err) => {
-        //         info.message = "删除失败" + err
-        //         event.sender.send(data.callback, JSON.stringify(info));
-        //     })
-        // })
+        //删除文件夹
+        ipc.on('deleteDir', (event, data) => {
+            "use strict";
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            let dirPath
+            try {
+                dirPath = path.normalize(data.dirPath)
+            }catch (e){
+                info.message = "删除失败" + e
+                event.sender.send(data.callback, JSON.stringify(info));
+            }
+            fs.emptyDir(dirPath).then(() => {
+                return fs.rmdir(dirPath)
+            }, (err) => {
+                info.message = "删除失败" + err
+                event.sender.send(data.callback, JSON.stringify(info));
+            }).then(() => {
+                info.flag = true
+                info.message = "删除成功"
+                event.sender.send(data.callback, JSON.stringify(info));
+            }, (err) => {
+                info.message = "删除失败" + err
+                event.sender.send(data.callback, JSON.stringify(info));
+            })
+        })
 
         //获取配置文件的服务器地址
         ipc.on('getServerUrl', (event, data) => {
@@ -210,7 +200,7 @@ const appEvent = {
             let outputDir = data.data.outputDir
             let fileName = data.data.fileName
             let options = data.data.options
-            let filePath = path.resolve(__dirname, outputDir + '/' + fileName)
+            let filePath = path.normalize(outputDir + '/' + fileName)
             let info = {
                 flag: false,
                 message: '',
@@ -323,7 +313,7 @@ const appEvent = {
                 data: null
             }
             let url = data.fileUrl
-            url = path.join(downloadPath, url)
+            url = path.normalize(url)
             fs.pathExists(url).then((exists) => {
                 "use strict";
                 if (!exists) {
@@ -437,7 +427,6 @@ const appEvent = {
                 })
             }
             // 设置下载路径
-
         })
 
         // 上传文件监听
@@ -581,7 +570,7 @@ const appEvent = {
                 'properties': ['openDirectory', 'createDirectory']
             }, (dirPath) => {
                 if (dirPath) {
-                    let filePath = path.resolve(__dirname, dirPath[0] + '/' + itemName);
+                    let filePath = path.normalize(dirPath[0] + '/' + itemName);
                     p.send({
                         type: 0,
                         itemUrl: itemUrl,

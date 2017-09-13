@@ -30,15 +30,23 @@ process.on('message', (m) => {
     info.message = "文件开始上传"
     process.send(info)
     console.log("上传中...");
+    console.log(uploadUrl)
     let rUpload = request.post({
         url: uploadUrl,
         formData: data.data
     }, function optionalCallback(err, httpResponse, body) {
         if (err || httpResponse.statusCode !== 200) {
-            info.flag = "fail"
-            info.message = "文件上传失败-->" + err
-            process.send(info)
-            process.exit(0)
+            if(err){
+                info.flag = "fail"
+                info.message = "文件上传失败-->" + err
+                process.send(info)
+                process.exit(0)
+            }else{
+                info.flag = "fail"
+                info.message = "文件上传失败-->" + body
+                process.send(info)
+                process.exit(0)
+            }
         } else {
             let bodyObj
             try {

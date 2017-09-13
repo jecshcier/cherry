@@ -19,16 +19,15 @@
 <button onclick="post()">post请求（json）</button>
 <button onclick="post2()">post请求(非json)</button>
 <button onclick="get()">get请求</button>
-<button onclick="get2()">get_query请求(带参数)</button>
-<button onclick="get()">查找文件是否存在</button>
+<button onclick="fileIsExsit()">查找文件是否存在</button>
 <input class="pid" type="text">
 <button onclick="killProcess($('.pid').val())">杀进程</button>
-<button onclick="deleteBook('jckj')">删除文件夹</button>
+<button onclick="deleteDir()">删除文件夹</button>
 <button onclick="chooseDir()">获取文件夹路径</button>
 <button onclick="createQRcode()">创建二维码</button>
 <button onclick="chooseFiles()">获取文件路径队列</button>
-<button onclick="getFolderFiles()">获取文件夹下载所有文件</button>
-<button onclick="openFile('93d52a82cc9d22dd664fd3911c433e0d (1).png')">打开文件</button>
+<button onclick="getFolderFiles()">获取文件夹下所有文件</button>
+<button onclick="openFile()">打开文件</button>
 <button onclick="max()">最大化</button>
 <button onclick="min()">最小化</button>
 <button onclick="exitApp()">关闭</button>
@@ -38,10 +37,10 @@
 <button type="button" name="button" onclick="uploadFiles({
         'url':serverUrl + '/api/fileUpload.html',
         'data':{
-            'files': 'uploadFile',
-            'url': '/ebookV3',
-            'createUser': 'FEAD77FF0737650B0BFB5F4056EE735C',
-            'roleType':3
+            files:'uploadFile',
+            url: encodeURI('/ebookV3'),
+            createUser: 'FEAD77FF0737650B0BFB5F4056EE735C',
+            roleType:3
         }
     })">上传文件测试
 </button>
@@ -60,14 +59,31 @@
 </body>
 <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
 <script type="text/javascript">
-    //打开文件
-    function openFile(fileUrl) {
-        app.send('openFile', {
-            fileUrl: fileUrl,
-            callback: 'openFileCallback'
+
+    function post2() {
+        app.send('httpPost_form', {
+            url: 'http://es.tes-sys.com/weare/login',
+            data: {
+                username: 'chenshenhao',
+                password: 'chenshenhao'
+            },
+            callback: 'httpPost_formCallback'
         })
-        app.once('openFileCallback', function (event, mess) {
+        app.once('httpPost_formCallback', function (event, mess) {
             alert(mess)
+        })
+    }
+
+    //打开文件
+    function openFile() {
+        chooseFiles(function(fileUrl){
+            app.send('openFile', {
+                fileUrl: fileUrl[0],
+                callback: 'openFileCallback'
+            })
+            app.once('openFileCallback', function (event, mess) {
+                alert(mess)
+            })
         })
     }
 
@@ -84,7 +100,6 @@
             })
         })
     }
-
 
     // 获取文件路径队列
     function chooseFiles(callback) {
@@ -217,7 +232,7 @@
 
     function fileIsExsit() {
         app.send('fileIsExsit', {
-            fileName: 'aaa.a',
+            filePath: '/Users/ShayneC/Documents/swipe.js',
             callback: 'fileIsExsitCallback'
         })
         app.once('fileIsExsitCallback', function (event, mess) {
@@ -283,14 +298,16 @@
         }
     })
 
-    function deleteBook(isbn) {
-        app.send('deleteBook', {
-            isbn: isbn,
-            callback: 'deleteBookCallback'
-        })
-        app.once('deleteBookCallback', function (event, mess) {
-            var obj = JSON.parse(mess)
-            alert(mess)
+    function deleteDir() {
+        chooseDir(function(dirPath){
+            app.send('deleteDir', {
+                dirPath: dirPath,
+                callback: 'deleteDirCallback'
+            })
+            app.once('deleteDirCallback', function (event, mess) {
+                var obj = JSON.parse(mess)
+                alert(mess)
+            })
         })
     }
 
@@ -305,103 +322,22 @@
         })
     }
 
-    //    获取教材列表
-    function getBookList(bookArr) {
-        app.send('getBookList', {
-            bookArr: bookArr,
-            callback: 'getBookListCallback'
-        })
-        app.once('getBookListCallback', function (event, mess) {
-            alert(mess)
-        })
-    }
-
-    // 删除教学过程
-    function deleteProcess() {
-        app.send('deleteProcess', {
-            process_id: 'c543cbca28c94b69859dd81f64c09e09',
-            callback: 'deleteProcesssCallback'
-        })
-        app.once('deleteProcesssCallback', function (event, mess) {
-            alert('删除教学过程成功\n' + mess)
-        })
-    }
-
-    //加载教学过程的文件
-    function loadProcessFilesArr(arr) {
-        arr.forEach(function (el, index) {
-            loadProcessFiles(el);
-        })
-    }
-
-    //根据教学过程读取教学过程的文件
-
-    function loadProcessFiles(id) {
-        app.send('loadProcessFiles', {
-            process_id: id,
-            callback: 'loadProcessFilesCallback' + id
-        })
-        app.once('loadProcessFilesCallback' + id, function (event, mess) {
-            console.log(mess)
-        })
-    }
-
-    // 修改教学过程
-    function editProcess() {
-        app.send('editProcess', {
-            info: {
-                'id': 'fa31a0618097446baf9727353ba3ef29',
-                'pos_x': 121,
-                'pos_y': 333,
-                'count': 4,
-            },
-            data: [{
-                'file_id': '编辑教学过程测试',
-                'detail_index': 0,
-                'file_name': '编辑教学过程测试',
-                'ext_name': '编辑教学过程测试',
-                'edit_name': '编辑教学过程测试',
-                'convert_name': 'hello.html',
-                'download_url': 'ccccccc',
-                'view_url': 'ddddddd',
-                'isDownload': 0
-            }],
-            callback: 'editProcessCallback'
-        })
-        app.once('editProcessCallback', function (event, mess) {
-            alert('编辑教学过程请求成功\n' + mess)
-        })
-    }
-
     // get请求接口
     function get() {
         app.send('httpGet', {
-            url: 'http://es.tes-sys.com/weare/getWholeProjectTeam',
+            url: 'http://es.tes-sys.com/ebook_services/api/getFileFromPan.html',
+            data: {
+                dirName: '/',
+                userId: '9AE969E5687D99F7664C140AA4C73B48',
+                diskType: 2,
+                roleType: 3,
+                singlePageFileNum: 100,
+                nowpage: 1
+            },
             callback: 'httpGetCallback'
         })
         app.once('httpGetCallback', function (event, mess) {
             alert('get请求成功\n' + mess)
-        })
-    }
-
-    // get_query接口
-    function get2() {
-        app.send('httpGet_Query', {
-            url: 'http://192.168.109.229:8080/skydisk-ms/api/dirList.html',
-            data: {
-                'd': '3D916361504ED86D22CD23A3C720E867',
-                'url': '/',
-                'user_id': '9AE969E5687D99F7664C140AA4C73B48',
-                'order_name': 'name',
-                'order_type': 'asc',
-                'disk_type': 2,
-                'singlePage_fileNum': 10,
-                'no': 1
-            },
-            callback: 'httpGetCallback'
-        })
-        app.once('httpGetCallback', function (event, mess) {
-            alert('get请求成功\n' + JSON.parse(mess))
         })
     }
 
@@ -430,28 +366,6 @@
         app.send('developTools')
     }
 
-    //    $(".stopUpload").click(function (event) {
-    //        var id = $(this).attr('uploadid');
-    //        // 停止上传接口
-    //        app.send('stopUpload', {
-    //            id: id,
-    //            callback: 'stopUploadCallback'
-    //        })
-    //        app.once('stopUploadCallback', function (event, mess) {
-    //            alert("停止上传" + mess)
-    //        })
-    //    });
-    //    $(".stopDownload").click(function (event) {
-    //        var id = $(this).attr('downloadid');
-    //        // 停止下载接口
-    //        app.send('stopDownload', {
-    //            id: id,
-    //            callback: 'stopDownloadCallback'
-    //        })
-    //        app.once('stopDownloadCallback', function (event, mess) {
-    //            alert("停止下载" + mess)
-    //        })
-    //    });
     $(".download").click(function (event) {
         var url = $(this).attr('url');
         // 下载固定地址的文件接口
@@ -508,7 +422,8 @@
         let obj = JSON.parse(message);
         // let webview = document.getElementById('webview');
         // webview.send('uploadSuccess', message);
-        console.log(obj.id + obj.message + obj.data)
+        console.log(obj.id + obj.message)
+        console.log(obj.data)
     };
     const uploadProgress = (event, message) => {
         let obj = JSON.parse(message);
