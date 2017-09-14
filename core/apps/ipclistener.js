@@ -21,6 +21,7 @@ const download_process = path.resolve(__dirname, './download.js')
 const upload_process = path.resolve(__dirname, './upload.js')
 const downloadPath = path.resolve(__dirname, '../../app/' + config.downloadPath)
 const QRCode = require('qrcode')
+const archiver = require('archiver');
 
 
 const appEvent = {
@@ -110,9 +111,9 @@ const appEvent = {
                 data: null
             }
             let filePath
-            try{
+            try {
                 filePath = path.normalize(data.filePath)
-            }catch (e){
+            } catch (e) {
                 info.flag = false
                 info.message = "文件路径有误"
                 event.sender.send(data.callback, JSON.stringify(info));
@@ -162,7 +163,7 @@ const appEvent = {
             let dirPath
             try {
                 dirPath = path.normalize(data.dirPath)
-            }catch (e){
+            } catch (e) {
                 info.message = "删除失败" + e
                 event.sender.send(data.callback, JSON.stringify(info));
             }
@@ -480,6 +481,43 @@ const appEvent = {
                 } else {
                     console.log("用户取消了上传");
                 }
+            })
+        })
+
+        ipc.on('zipFile', (event, data) => {
+            let dir = data.dirPath
+            dialog.showOpenDialog({
+                'properties': ['openDirectory', 'createDirectory']
+            }, (dirPath) => {
+
+                let outPath = path.normalize(dirPath + '/' + '66666.zip')
+                let output = fs.createWriteStream(outPath);
+                let archive = archiver('zip', {
+                    zlib: { level: 9 } // Sets the compression level.
+                });
+                output.on('close', function () {
+                    console.log(archive.pointer() + ' total bytes');
+                    console.log('archiver has been finalized and the output file descriptor has closed.');
+                });
+                archive.on('warning', function (err) {
+                    if (err.code === 'ENOENT') {
+                        // log warning
+                    } else {
+                        // throw error
+                        throw err;
+                    }
+                });
+
+                // good practice to catch this error explicitly
+                archive.on('error', function (err) {
+                    throw err;
+                });
+
+                // pipe archive data to the file
+                archive.pipe(output);
+                archive.directory(dir, false);
+                archive.finalize();
+                console.log("ok")
             })
         })
 

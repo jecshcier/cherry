@@ -28,6 +28,7 @@
 <button onclick="chooseFiles()">获取文件路径队列</button>
 <button onclick="getFolderFiles()">获取文件夹下所有文件</button>
 <button onclick="openFile()">打开文件</button>
+<button onclick="zipFile()">压缩文件</button>
 <button onclick="max()">最大化</button>
 <button onclick="min()">最小化</button>
 <button onclick="exitApp()">关闭</button>
@@ -59,6 +60,19 @@
 </body>
 <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
 <script type="text/javascript">
+
+    function zipFile() {
+        chooseDir(function (dirPath) {
+            app.send('zipFile', {
+                dirPath: dirPath,
+                callback: 'zipFileCallback'
+            })
+            app.once('zipFileCallback', function (event, mess) {
+                alert(mess)
+            })
+        })
+
+    }
 
     function post2() {
         app.send('httpPost_form', {
