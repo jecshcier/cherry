@@ -19,6 +19,7 @@ const sqlite3 = require('sqlite3').verbose();
 const child = require('child_process')
 const download_process = path.resolve(__dirname, './download.js')
 const upload_process = path.resolve(__dirname, './upload.js')
+const pdf2Text = path.resolve(__dirname, './plugins/pdf2Text.js')
 const downloadPath = path.resolve(__dirname, '../../app/' + config.downloadPath)
 const QRCode = require('qrcode')
 const archiver = require('archiver');
@@ -493,7 +494,7 @@ const appEvent = {
                 let outPath = path.normalize(dirPath + '/' + '66666.zip')
                 let output = fs.createWriteStream(outPath);
                 let archive = archiver('zip', {
-                    zlib: { level: 9 } // Sets the compression level.
+                    zlib: {level: 9} // Sets the compression level.
                 });
                 output.on('close', function () {
                     console.log(archive.pointer() + ' total bytes');
@@ -520,6 +521,81 @@ const appEvent = {
                 console.log("ok")
             })
         })
+
+        ipc.on('readPdf', (event, data) => {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            let inputPath = data.data.inputDir
+            let outputPath = data.data.outputDir
+            let p = child.fork(pdf2Text, [], {})
+            p.on('message', function (m) {
+                info.flag = m.flag
+                info.message = m.message
+                info.data = m.data
+                event.sender.send(data.callback, JSON.stringify(info));
+            })
+
+            p.send({
+                inputPath: inputPath,
+                outputPath: outputPath
+            })
+
+        })
+
+        ipc.on('readFormula', (event, data) => {
+            let info = {
+                flag: false,
+                message: '',
+                data: null
+            }
+            if (data.data.url.length > 1) {
+                info.message = "只能选择一个文件！"
+                event.sender.send(data.callback, JSON.stringify(info));
+                return false
+            }
+            let filedata
+            try{
+                filedata = fs.readFileSync(data.data.url[0], 'utf8')
+            }
+            catch (e){
+                    info.message = "文件读取错误！==>" + err
+                    event.sender.send(data.callback, JSON.stringify(info));
+                    return false
+            }
+            let formula_check = false;
+            let tempStr = ''
+            let formulaArr = []
+            for (let i = 0; i < filedata.length; i++) {
+                let str = filedata.slice(i, i + 1)
+                if (str === '$') {
+                    if (formula_check) {
+                        formula_check = false
+                        tempStr += str
+                        formulaArr.push(tempStr)
+                        tempStr = ''
+                    }
+                    else {
+                        tempStr += str
+                        formula_check = true
+                    }
+                }
+                else {
+                    if (formula_check) {
+                        tempStr += str
+                    }
+                }
+            }
+            console.log(formulaArr)
+            info.flag = true
+            info.message = "读取成功"
+            info.data = formulaArr
+            event.sender.send(data.callback, JSON.stringify(info));
+
+        })
+
 
     },
     windowListener: (win) => { // 程序最小化

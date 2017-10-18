@@ -11,7 +11,7 @@
     "minHeight": 600,
     "fullscreen": false,
     "fullscreenable": true,
-    "staticUrl":"html/doc.html",
+    "staticUrl":"html/index.html",
     "downloadPath": "downloads",
     "serverUrl": "http://es.tes-sys.com/ebook_services"
 }
