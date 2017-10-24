@@ -19,7 +19,6 @@ const sqlite3 = require('sqlite3').verbose();
 const child = require('child_process')
 const download_process = path.resolve(__dirname, './download.js')
 const upload_process = path.resolve(__dirname, './upload.js')
-const pdf2Text = path.resolve(__dirname, './plugins/pdf2Text.js')
 const downloadPath = path.resolve(__dirname, '../../app/' + config.downloadPath)
 const QRCode = require('qrcode')
 
@@ -494,7 +493,7 @@ const appEvent = {
                 let outPath = path.normalize(dirPath + '/' + '66666.zip')
                 let output = fs.createWriteStream(outPath);
                 let archive = archiver('zip', {
-                    zlib: {level: 9} // Sets the compression level.
+                    zlib: { level: 9 } // Sets the compression level.
                 });
                 output.on('close', function () {
                     console.log(archive.pointer() + ' total bytes');
@@ -522,6 +521,7 @@ const appEvent = {
             })
         })
 
+<<<<<<< HEAD
         ipc.on('readPdf', (event, data) => {
             let info = {
                 flag: false,
@@ -599,6 +599,8 @@ const appEvent = {
 
 =======
 >>>>>>> parent of 9dd9d21... update
+=======
+>>>>>>> parent of bfe70dd... update
     },
     windowListener: (win) => { // 程序最小化
 
