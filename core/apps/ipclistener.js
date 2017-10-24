@@ -22,7 +22,6 @@ const upload_process = path.resolve(__dirname, './upload.js')
 const pdf2Text = path.resolve(__dirname, './plugins/pdf2Text.js')
 const downloadPath = path.resolve(__dirname, '../../app/' + config.downloadPath)
 const QRCode = require('qrcode')
-const archiver = require('archiver');
 
 
 const appEvent = {
@@ -112,9 +111,9 @@ const appEvent = {
                 data: null
             }
             let filePath
-            try {
+            try{
                 filePath = path.normalize(data.filePath)
-            } catch (e) {
+            }catch (e){
                 info.flag = false
                 info.message = "文件路径有误"
                 event.sender.send(data.callback, JSON.stringify(info));
@@ -164,7 +163,7 @@ const appEvent = {
             let dirPath
             try {
                 dirPath = path.normalize(data.dirPath)
-            } catch (e) {
+            }catch (e){
                 info.message = "删除失败" + e
                 event.sender.send(data.callback, JSON.stringify(info));
             }
@@ -485,6 +484,7 @@ const appEvent = {
             })
         })
 
+<<<<<<< HEAD
         ipc.on('zipFile', (event, data) => {
             let dir = data.dirPath
             dialog.showOpenDialog({
@@ -597,6 +597,8 @@ const appEvent = {
         })
 
 
+=======
+>>>>>>> parent of 9dd9d21... update
     },
     windowListener: (win) => { // 程序最小化
 
